@@ -381,6 +381,13 @@ export class ModelingAssessmentEditorComponent implements OnInit, OnDestroy {
                 this.assessmentsAreValid = false;
                 return;
             }
+            if (this.highlightMissingFeedback && feedback.referenceId) {
+                const highlightedElement = this.highlightedElements.get(feedback.referenceId);
+                if (highlightedElement && highlightedElement === FeedbackHighlightColor.RED) {
+                    this.highlightedElements = new Map<string, string>([...this.highlightedElements].filter(([key]) => key !== feedback.referenceId));
+                    return;
+                }
+            }
         }
         this.assessmentsAreValid = true;
     }
@@ -407,9 +414,9 @@ export class ModelingAssessmentEditorComponent implements OnInit, OnDestroy {
             : new Map<string, string>();
 
         const referenceIds = this.referencedFeedback.map(feedback => feedback.referenceId);
-        for (const element of this.model.elements) {
-            if (!referenceIds.includes(element.id)) {
-                this.highlightedElements.set(element.id, FeedbackHighlightColor.RED);
+        for (const element of this.model.elements.map(element => element.id).concat(this.model.relationships.map(rel => rel.id))) {
+            if (!referenceIds.includes(element)) {
+                this.highlightedElements.set(element, FeedbackHighlightColor.RED);
             }
         }
     }
