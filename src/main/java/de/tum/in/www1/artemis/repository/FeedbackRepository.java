@@ -2,6 +2,7 @@ package de.tum.in.www1.artemis.repository;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -25,4 +26,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
      * @param resultId the Id of the result where the feedbacks should be deleted
      */
     void deleteByResult_Id(long resultId);
+
+    @EntityGraph(attributePaths = { "result", "result.submission" })
+    List<Feedback> findAllByResult_Submission_Participation_ExerciseIdIn(List<Long> exerciseIds);
 }
