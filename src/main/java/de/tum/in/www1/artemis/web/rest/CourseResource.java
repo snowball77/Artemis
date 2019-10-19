@@ -558,14 +558,15 @@ public class CourseResource {
     @DeleteMapping("/courses/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
     @Transactional
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean deleteStudentReposBuildPlans,
+            @RequestParam(defaultValue = "false") boolean deleteBaseReposBuildPlans) {
         log.debug("REST request to delete Course : {}", id);
         Course course = courseService.findOne(id);
         if (course == null) {
             return ResponseEntity.notFound().build();
         }
         for (Exercise exercise : course.getExercises()) {
-            exerciseService.delete(exercise, false, false);
+            exerciseService.delete(exercise, deleteStudentReposBuildPlans, deleteBaseReposBuildPlans);
         }
 
         for (Lecture lecture : course.getLectures()) {

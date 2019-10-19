@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs/Subscription';
 import { JhiAlertService, JhiEventManager } from 'ng-jhipster';
 import { Course } from './course.model';
 import { CourseService } from './course.service';
+import { ExerciseType } from 'app/entities/exercise';
 
 @Component({
     selector: 'jhi-course',
@@ -54,8 +55,8 @@ export class CourseComponent implements OnInit, OnDestroy {
      * Deletes the course
      * @param courseId id the course that will be deleted
      */
-    deleteCourse(courseId: number) {
-        this.courseService.delete(courseId).subscribe(
+    deleteCourse(courseId: number, $event: { [key: string]: boolean }) {
+        this.courseService.delete(courseId, $event.deleteStudentReposBuildPlans, $event.deleteBaseReposBuildPlans).subscribe(
             () => {
                 this.eventManager.broadcast({
                     name: 'courseListModification',

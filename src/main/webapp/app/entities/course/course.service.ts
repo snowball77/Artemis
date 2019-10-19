@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import * as moment from 'moment';
 import { map } from 'rxjs/operators';
@@ -115,8 +115,12 @@ export class CourseService {
             .pipe(map((res: EntityArrayResponseType) => this.subscribeToCourseNotifications(res)));
     }
 
-    delete(courseId: number): Observable<HttpResponse<void>> {
-        return this.http.delete<void>(`${this.resourceUrl}/${courseId}`, { observe: 'response' });
+    delete(courseId: number, deleteStudentReposBuildPlans: boolean, deleteBaseReposBuildPlans: boolean): Observable<HttpResponse<void>> {
+        let params = new HttpParams();
+        params = params.set('deleteStudentReposBuildPlans', deleteStudentReposBuildPlans.toString());
+        params = params.set('deleteBaseReposBuildPlans', deleteBaseReposBuildPlans.toString());
+
+        return this.http.delete<void>(`${this.resourceUrl}/${courseId}`, { params, observe: 'response' });
     }
 
     getStatsForInstructors(courseId: number): Observable<HttpResponse<StatsForDashboard>> {
