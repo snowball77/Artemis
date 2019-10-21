@@ -11,17 +11,19 @@ import {
     LectureUpdateComponent
 } from './';
 import { FormDateTimePickerModule } from 'app/shared/date-time-picker/date-time-picker.module';
-import { ArtemisConfirmButtonModule } from 'app/components/confirm-button/confirm-button.module';
+import { ArtemisSharedComponentModule } from 'app/shared/components/shared-component.module';
 import { ArtemisMarkdownEditorModule } from 'app/markdown-editor';
+
 
 const ENTITY_STATES = [...lectureRoute];
 
 @NgModule({
+
     imports: [
         ArtemisSharedModule,
         RouterModule.forChild(ENTITY_STATES),
         FormDateTimePickerModule,
-        ArtemisConfirmButtonModule,
+    ArtemisSharedComponentModule,
         ArtemisMarkdownEditorModule,
     ],
     declarations: [LectureComponent, LectureDetailComponent, LectureUpdateComponent, LectureAttachmentsComponent],
