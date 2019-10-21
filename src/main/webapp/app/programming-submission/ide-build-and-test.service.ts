@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { ProgrammingExercise } from '../entities/programming-exercise';
-import { ProgrammingSubmissionService } from '../programming-submission';
-import { ParticipationWebsocketService } from '../entities/participation';
-import { Result } from '../entities/result';
-import { filter, map, tap } from 'rxjs/operators';
+import { ProgrammingSubmissionService } from 'app/programming-submission/programming-submission.service';
+import { ParticipationWebsocketService } from 'app/entities/participation';
 import { JavaBridgeService } from 'app/intellij/java-bridge.service';
 import { CodeEditorBuildLogService, DomainType } from 'app/code-editor';
+import { ProgrammingExercise } from 'app/entities/programming-exercise';
+import { filter, map, tap } from 'rxjs/operators';
+import { Result } from 'app/entities/result';
 import { BuildLogEntryArray } from 'app/entities/build-log';
 
 @Injectable({

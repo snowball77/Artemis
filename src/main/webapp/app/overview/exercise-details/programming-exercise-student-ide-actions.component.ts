@@ -6,8 +6,8 @@ import { JhiAlertService } from 'ng-jhipster';
 import { SourceTreeService } from 'app/components/util/sourceTree.service';
 import { IntelliJState } from 'app/intellij/intellij';
 import { JavaBridgeService } from 'app/intellij/java-bridge.service';
-import { IdeBuildAndTestService } from 'app/intellij/ide-build-and-test.service';
 import { ProgrammingExercise } from 'app/entities/programming-exercise';
+import { IdeBuildAndTestService } from 'app/programming-submission/ide-build-and-test.service';
 
 @Component({
     selector: 'jhi-programming-exercise-student-ide-actions',
