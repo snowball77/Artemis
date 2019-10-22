@@ -20,7 +20,12 @@ export class LectureDetailComponent implements OnInit, OnDestroy {
     private subscription: Subscription;
     private eventSubscriber: Subscription;
 
-    constructor(protected activatedRoute: ActivatedRoute, private eventManager: JhiEventManager, private lectureService: LectureService,  private artemisMarkdown: ArtemisMarkdown) {}
+    constructor(
+        protected activatedRoute: ActivatedRoute,
+        private eventManager: JhiEventManager,
+        private lectureService: LectureService,
+        private artemisMarkdown: ArtemisMarkdown,
+    ) {}
 
     ngOnInit() {
         this.activatedRoute.data.subscribe(({ lecture }) => {
