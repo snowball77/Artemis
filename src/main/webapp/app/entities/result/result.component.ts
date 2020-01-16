@@ -178,7 +178,8 @@ export class ResultComponent implements OnInit, OnChanges {
     }
 
     buildResultString() {
-        if (this.result!.resultString === 'No tests found') {
+        console.log(this.result!.buildFailed);
+        if (this.result!.buildFailed) {
             return this.translate.instant('artemisApp.editor.buildFailed');
             // Only show the 'preliminary' string for programming student participation results and if the buildAndTestAfterDueDate has not passed.
         } else if (
@@ -204,7 +205,7 @@ export class ResultComponent implements OnInit, OnChanges {
     }
 
     getHasFeedback() {
-        if (this.result!.resultString === 'No tests found') {
+        if (this.result!.buildFailed) {
             return true;
         } else if (this.result!.hasFeedback === null) {
             return false;

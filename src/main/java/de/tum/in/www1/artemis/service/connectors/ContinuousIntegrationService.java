@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.apache.http.HttpException;
 import org.springframework.http.ResponseEntity;
 
-import de.tum.in.www1.artemis.config.Constants;
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.enumeration.ProgrammingLanguage;
 import de.tum.in.www1.artemis.domain.participation.ProgrammingExerciseParticipation;
@@ -16,10 +15,6 @@ import de.tum.in.www1.artemis.domain.participation.ProgrammingExerciseParticipat
  * Abstract service for managing entities related to continuous integration.
  */
 public interface ContinuousIntegrationService {
-
-    enum BuildStatus {
-        INACTIVE, QUEUED, BUILDING
-    }
 
     /**
      * Creates the base build plan for the given programming exercise
@@ -233,6 +228,10 @@ public interface ContinuousIntegrationService {
      */
     Optional<String> getWebHookUrl(String projectKey, String buildPlanId);
 
+    enum BuildStatus {
+        INACTIVE, QUEUED, BUILDING
+    }
+
     /**
      * Path a repository should get checked out in a build plan. E.g. the assignment repository should get checked out
      * to a subdirectory called "assignment" for the Python programming language.
@@ -246,7 +245,7 @@ public interface ContinuousIntegrationService {
                 case JAVA:
                 case PYTHON:
                 case C:
-                    return Constants.ASSIGNMENT_CHECKOUT_PATH;
+                    return de.tum.in.www1.artemis.config.Constants.ASSIGNMENT_CHECKOUT_PATH;
                 default:
                     throw new IllegalArgumentException("Repository checkout path for assignment repo has not yet been defined for " + language);
                 }
@@ -261,7 +260,7 @@ public interface ContinuousIntegrationService {
                 case PYTHON:
                     return "";
                 case C:
-                    return Constants.TESTS_CHECKOUT_PATH;
+                    return de.tum.in.www1.artemis.config.Constants.TESTS_CHECKOUT_PATH;
                 default:
                     throw new IllegalArgumentException("Repository checkout path for test repo has not yet been defined for " + language);
                 }
@@ -279,5 +278,13 @@ public interface ContinuousIntegrationService {
          * @return The path to the subdirectory as a String to which some repository should get checked out to.
          */
         String forProgrammingLanguage(ProgrammingLanguage language);
+    }
+
+    final class Constants {
+
+        public static final String RESULT_BUILD_ERROR = "No tests found";
+
+        private Constants() {
+        }
     }
 }

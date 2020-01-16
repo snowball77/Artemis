@@ -138,8 +138,7 @@ export class ExerciseScoresComponent implements OnInit, OnDestroy {
             case FilterProp.UNSUCCESSFUL:
                 return !result.successful;
             case FilterProp.BUILD_FAILED:
-                // TODO: A boolean flag {buildFailed} on the result coming from the backend would be better
-                return result.resultString === 'No tests found';
+                return result.buildFailed;
             case FilterProp.MANUAL:
                 return result.assessmentType === AssessmentType.MANUAL;
             case FilterProp.AUTOMATIC:

@@ -30,6 +30,7 @@ import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.domain.quiz.QuizSubmission;
 import de.tum.in.www1.artemis.domain.view.QuizView;
+import de.tum.in.www1.artemis.service.connectors.ContinuousIntegrationService;
 
 /**
  * A Result.
@@ -129,6 +130,35 @@ public class Result implements Serializable {
     @Transient
     @JsonProperty
     private Integer submissionCount;
+
+    /**
+     * True, if the exercise this is a result for a programming exercise and the build failed, e.g. because of a compile error.
+     */
+    @Transient
+    @JsonProperty
+    private boolean buildFailed;
+
+    @PostLoad
+    public void postLoad() {
+        determineBuildFailed();
+    }
+
+    @PostPersist
+    public void postPersist() {
+        determineBuildFailed();
+    }
+
+    private void determineBuildFailed() {
+        this.buildFailed = this.resultString != null && this.resultString.equals(ContinuousIntegrationService.Constants.RESULT_BUILD_ERROR);
+    }
+
+    public boolean isBuildFailed() {
+        return buildFailed;
+    }
+
+    public void setBuildFailed(boolean buildFailed) {
+        this.buildFailed = buildFailed;
+    }
 
     public Integer getSubmissionCount() {
         return submissionCount;

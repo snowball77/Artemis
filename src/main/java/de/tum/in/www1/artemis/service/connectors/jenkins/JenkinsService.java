@@ -246,7 +246,7 @@ public class JenkinsService implements ContinuousIntegrationService {
         result.setScore((long) calculateResultScore(report, testSum));
         result.setParticipation(participation);
         addFeedbackToResult(result, report);
-        result.setResultString(result.getHasFeedback() ? report.getSuccessful() + " of " + testSum + " passed" : "Build Error");
+        result.setResultString(result.getHasFeedback() ? report.getSuccessful() + " of " + testSum + " passed" : Constants.RESULT_BUILD_ERROR);
 
         return result;
     }
