@@ -167,7 +167,7 @@ export class JavaBridgeService implements JavaDowncallBridge, JavaUpcallBridge {
      * @param exerciseId
      */
     startedBuildInIntelliJ(courseId: number, exerciseId: number) {
-        this.router.navigateByUrl(`/overview/${courseId}/exercises/${exerciseId}`, { queryParams: { withIdeSubmit: true } });
+        this.router.navigate(['overview', courseId, 'exercises', exerciseId], { queryParams: { withIdeSubmit: true } });
     }
 
     /**
