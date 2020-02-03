@@ -1,0 +1,24 @@
+<div>
+    <div *ngIf="entities && !isPreparing; else loadingContainer" class="table-responsive">
+        <ngx-datatable
+            [limit]="pageLimit"
+            [sortType]="SortType.multi"
+            [columnMode]="ColumnMode.force"
+            [headerHeight]="50"
+            [footerHeight]="50"
+            rowHeight="auto"
+            [rows]="entities"
+            [rowClass]="''"
+            [scrollbarH]="true"
+            [externalPaging]="true"
+            [externalSorting]="true"
+        >
+            <ng-container *ngTemplateOutlet="templateRef; context"></ng-container>
+        </ngx-datatable>
+    </div>
+    <ng-template #loadingContainer>
+        <div class="loading-container d-flex justify-content-center align-items-center">
+            <fa-icon size="lg" icon="circle-notch" [spin]="true"></fa-icon>
+        </div>
+    </ng-template>
+</div>

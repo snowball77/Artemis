@@ -1,12 +1,9 @@
-import { ComponentFixture } from '@angular/core/testing';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { isNumber } from 'lodash';
-import { PagingValue, SortProp } from 'app/components/data-table/data-table.component';
 import { BaseEntity } from 'app/shared';
 import { LocalStorageService } from 'ngx-webstorage';
 import { Observable } from 'rxjs';
-
-const entityToString = (entity: BaseEntity) => entity.id.toString();
+import { entityToString, PagingValue } from 'app/components/data-table/generic-datatable';
 
 @Component({
     selector: 'jhi-data-table-search-controls',
@@ -26,10 +23,7 @@ export class DataDableSearchControlsComponent implements OnInit {
     @Output() onPagingValueSelected = new EventEmitter<PagingValue>();
 
     pagingValue: PagingValue;
-    entityCriteria: {
-        textSearch: string[];
-        sortProp: SortProp;
-    };
+    textSearch: string[];
 
     constructor(private localStorage: LocalStorageService) {}
 
@@ -37,6 +31,13 @@ export class DataDableSearchControlsComponent implements OnInit {
         this.pagingValue = this.getCachedEntitiesPerPage();
         this.onPagingValueSelected.emit(this.pagingValue);
     }
+
+    /**
+     * @property PAGING_VALUES Possible values for the number of entities shown per page of the table
+     * @property DEFAULT_PAGING_VALUE Default number of entities shown per page if the user has no value set for this yet in local storage
+     */
+    readonly PAGING_VALUES: PagingValue[] = [10, 20, 50, 100, 200, 500, 1000, 'all'];
+    readonly DEFAULT_PAGING_VALUE = 50;
 
     /**
      * Get "items per page" setting from local storage. If it does not exist, use the default.
@@ -51,13 +52,6 @@ export class DataDableSearchControlsComponent implements OnInit {
         }
         return this.DEFAULT_PAGING_VALUE;
     };
-
-    /**
-     * @property PAGING_VALUES Possible values for the number of entities shown per page of the table
-     * @property DEFAULT_PAGING_VALUE Default number of entities shown per page if the user has no value set for this yet in local storage
-     */
-    readonly PAGING_VALUES: PagingValue[] = [10, 20, 50, 100, 200, 500, 1000, 'all'];
-    readonly DEFAULT_PAGING_VALUE = 50;
 
     /**
      * Returns the translation based on whether a limited number of entities is displayed or all
@@ -86,7 +80,7 @@ export class DataDableSearchControlsComponent implements OnInit {
      * @param entity Entity that was selected via autocomplete
      */
     onAutocompleteSelect = (entity: BaseEntity) => {
-        this.entityCriteria.textSearch[this.entityCriteria.textSearch.length - 1] = this.searchTextFromEntity(entity);
+        this.textSearch[this.textSearch.length - 1] = this.searchTextFromEntity(entity);
         this.onAutocompleteSelected.emit();
     };
 
@@ -101,6 +95,6 @@ export class DataDableSearchControlsComponent implements OnInit {
      * Formats the search input.
      */
     searchInputFormatter = () => {
-        return this.entityCriteria.textSearch.join(', ');
+        return this.textSearch.join(', ');
     };
 }
