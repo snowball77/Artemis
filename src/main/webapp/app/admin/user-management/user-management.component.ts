@@ -113,15 +113,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Returns the unique identifier for items in the collection
-     * @param index of a user in the collection
-     * @param item current user
-     */
-    trackIdentity(index: number, item: User) {
-        return item.id;
-    }
-
-    /**
      * Sorts parameters by specified order
      */
     sort() {
@@ -130,30 +121,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
             result.push('id');
         }
         return result;
-    }
-
-    /**
-     * Loads specified page, if it is not the same as previous one
-     * @param page number of the page that will be loaded
-     */
-    loadPage(page: number) {
-        if (page !== this.previousPage) {
-            this.previousPage = page;
-            this.transition();
-        }
-    }
-
-    /**
-     * Transitions to another page and/or sorting order
-     */
-    transition() {
-        this.router.navigate(['/admin/user-management'], {
-            queryParams: {
-                page: this.page,
-                sort: this.predicate + ',' + (this.reverse ? 'asc' : 'desc'),
-            },
-        });
-        this.loadAll();
     }
 
     /**
@@ -177,5 +144,23 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         this.links = this.parseLinks.parse(headers.get('link')!);
         this.totalItems = headers.get('X-Total-Count')!;
         this.users = data;
+    }
+
+    /**
+     * Returns the search string to be displayed on the search text box after selecting a user
+     *
+     * @param user The user to be parsed
+     */
+    searchTextFromUser(user: User): string {
+        return user.login || '';
+    }
+
+    /**
+     * Returns the formatted string to be displayed in the found users after searching for one.
+     *
+     * @param user
+     */
+    searchResultFormatter(user: User): string {
+        return `${user.name} (${user.login})`;
     }
 }

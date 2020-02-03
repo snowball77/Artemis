@@ -6,96 +6,182 @@
         </button>
     </h2>
     <jhi-alert></jhi-alert>
-    <div class="table-responsive" *ngIf="users">
-        <table class="table table-striped">
-            <thead>
-                <tr jhiSort [(predicate)]="predicate" [(ascending)]="reverse" [callback]="transition.bind(this)">
-                    <th jhiSortBy="id"><span jhiTranslate="global.field.id">ID</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th jhiSortBy="login"><span jhiTranslate="userManagement.login">Login</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th jhiSortBy="email"><span jhiTranslate="userManagement.email">Email</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th></th>
-                    <th jhiSortBy="langKey"><span jhiTranslate="userManagement.langKey">Lang Key</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th><span jhiTranslate="userManagement.profiles">Profiles</span></th>
-                    <th><span>Groups</span></th>
-                    <th jhiSortBy="createdDate"><span jhiTranslate="userManagement.createdDate">Created Date</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th jhiSortBy="lastModifiedBy"><span jhiTranslate="userManagement.lastModifiedBy">Last Modified By</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th jhiSortBy="lastModifiedDate"><span jhiTranslate="userManagement.lastModifiedDate">Last Modified Date</span> <fa-icon [icon]="'sort'"></fa-icon></th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody *ngIf="users">
-                <tr *ngFor="let user of users; trackBy: trackIdentity">
-                    <td>
-                        <a [routerLink]="['./', user.login, 'view']">{{ user.id }}</a>
-                    </td>
-                    <td>{{ user.login }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" (click)="setActive(user, true)" *ngIf="!user.activated" jhiTranslate="userManagement.deactivated">Deactivated</button>
+    <jhi-data-table
+        [isLoading]="!users"
+        entityType="user"
+        [allEntities]="users"
+        entitiesPerPageTranslation="userManagement.resultsPerPage"
+        showAllEntitiesTranslation="userManagement.showAllResults"
+        searchPlaceholderTranslation="userManagement.searchForUser"
+        [searchFields]="['user.name', 'user.email', 'user.login']"
+        [searchTextFromEntity]="searchTextFromUser"
+        [searchResultFormatter]="searchResultFormatter"
+    >
+        <ng-template let-settings="settings" let-controls="controls">
+            <ngx-datatable
+                class="bootstrap"
+                [limit]="settings.limit"
+                [sortType]="settings.sortType"
+                [columnMode]="settings.columnMode"
+                [headerHeight]="settings.headerHeight"
+                [footerHeight]="settings.footerHeight"
+                [rowHeight]="settings.rowHeight"
+                [rows]="settings.rows"
+                [rowClass]="settings.rowClass"
+                [scrollbarH]="settings.scrollbarH"
+            >
+                <ngx-datatable-column prop="" [minWidth]="20" [width]="25">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('id')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'global.field.id' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('id')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <a [routerLink]="['./', value.login, 'view']">{{ value.id }}</a>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="login">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('login')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.login' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('login')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <span>{{ value }}</span>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="email">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('email')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.email' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('email')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <span>{{ value }}</span>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="" [minWidth]="40" [width]="40">
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <button class="btn btn-danger btn-sm" (click)="setActive(value, true)" *ngIf="!value.activated" jhiTranslate="userManagement.deactivated">
+                            Deactivated
+                        </button>
                         <button
                             class="btn btn-success btn-sm"
-                            (click)="setActive(user, false)"
-                            *ngIf="user.activated"
-                            [disabled]="currentAccount.login === user.login"
+                            (click)="setActive(value, false)"
+                            *ngIf="value.activated"
+                            [disabled]="currentAccount.login === value.login"
                             jhiTranslate="userManagement.activated"
                         >
                             Activated
                         </button>
-                    </td>
-                    <td>{{ user.langKey }}</td>
-                    <td>
-                        <div *ngFor="let authority of user.authorities">
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="langKey" [minWidth]="50" [width]="50">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('langKey')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.langKey' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('langKey')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <span>{{ value }}</span>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="authorities">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.profiles' | translate }}</span>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <div *ngFor="let authority of value">
                             <span class="badge badge-info">{{ authority }}</span>
                         </div>
-                    </td>
-                    <td>
-                        <div *ngFor="let group of user.groups">
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="groups">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.groups' | translate }}</span>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <div *ngFor="let group of value">
                             <span class="badge badge-info">{{ group }}</span>
                         </div>
-                    </td>
-                    <td>{{ user.createdDate | date: 'dd/MM/yy HH:mm' }}</td>
-                    <td>{{ user.lastModifiedBy }}</td>
-                    <td>{{ user.lastModifiedDate | date: 'dd/MM/yy HH:mm' }}</td>
-                    <td class="text-right">
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="createdDate" [minWidth]="60" [width]="60">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('createdDate')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.createdDate' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('createdDate')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <span>{{ value | date: 'dd/MM/yy HH:mm' }}</span>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="lastModifiedBy" [minWidth]="60" [width]="60">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('lastModifiedBy')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.lastModifiedBy' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('lastModifiedBy')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <span>{{ value }}</span>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="lastModifiedDate" [minWidth]="60" [width]="60">
+                    <ng-template ngx-datatable-header-template>
+                        <span class="datatable-header-cell-wrapper" (click)="controls.onSort('lastModifiedDate')">
+                            <span class="datatable-header-cell-label bold sortable">{{ 'userManagement.lastModifiedDate' | translate }}</span>
+                            <fa-icon [icon]="controls.iconForSortPropField('lastModifiedDate')"></fa-icon>
+                        </span>
+                    </ng-template>
+                    <ng-template ngx-datatable-cell-template let-value="value">
+                        <span>{{ value | date: 'dd/MM/yy HH:mm' }}</span>
+                    </ng-template>
+                </ngx-datatable-column>
+
+                <ngx-datatable-column prop="" [minWidth]="130" [width]="140">
+                    <ng-template ngx-datatable-cell-template let-value="value">
                         <div class="btn-group flex-btn-group-container">
-                            <button type="submit" [routerLink]="['./', user.login, 'view']" class="btn btn-info btn-sm">
+                            <button type="submit" [routerLink]="['./', value.login, 'view']" class="btn btn-info btn-sm">
                                 <fa-icon [icon]="'eye'"></fa-icon>
                                 <span class="d-none d-md-inline" jhiTranslate="entity.action.view">View</span>
                             </button>
-                            <button type="submit" [routerLink]="['./', user.login, 'edit']" queryParamsHandling="merge" class="btn btn-primary btn-sm">
+                            <button type="submit" [routerLink]="['./', value.login, 'edit']" queryParamsHandling="merge" class="btn btn-primary btn-sm">
                                 <fa-icon [icon]="'pencil-alt'"></fa-icon>
                                 <span class="d-none d-md-inline" jhiTranslate="entity.action.edit">Edit</span>
                             </button>
                             <button
                                 jhiDeleteButton
-                                [entityTitle]="user.login"
+                                [entityTitle]="value.login"
                                 deleteQuestion="userManagement.delete.question"
-                                (delete)="deleteUser(user.login)"
+                                (delete)="deleteUser(value.login)"
                                 [dialogError]="dialogError$"
-                                [disabled]="currentAccount.login === user.login"
+                                [disabled]="currentAccount.login === value.login"
                             >
                                 <fa-icon [icon]="'times'"></fa-icon>
                             </button>
                         </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    <div *ngIf="users">
-        <div class="row justify-content-center">
-            <jhi-item-count [page]="page" [total]="totalItems" [itemsPerPage]="itemsPerPage"></jhi-item-count>
-        </div>
-        <div class="row justify-content-center">
-            <ngb-pagination
-                [collectionSize]="totalItems"
-                [(page)]="page"
-                [pageSize]="itemsPerPage"
-                [maxSize]="5"
-                [rotate]="true"
-                [boundaryLinks]="true"
-                (pageChange)="loadPage(page)"
-            ></ngb-pagination>
-        </div>
-    </div>
+                    </ng-template>
+                </ngx-datatable-column>
+            </ngx-datatable>
+        </ng-template>
+    </jhi-data-table>
 </div>

@@ -21,6 +21,7 @@ import { FormDateTimePickerModule } from 'app/shared/date-time-picker/date-time-
 import { AdminFeatureToggleComponent } from 'app/admin/features/admin-feature-toggle.component';
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { TagInputModule } from 'ngx-chips';
+import { ArtemisDataTableModule } from 'app/components/data-table/data-table.module';
 
 /* jhipster-needle-add-admin-module-import - JHipster will add admin modules imports here */
 
@@ -33,6 +34,7 @@ const ENTITY_STATES = [...adminState];
         FormDateTimePickerModule,
         NgxDatatableModule,
         TagInputModule,
+        ArtemisDataTableModule,
         /* jhipster-needle-add-admin-module - JHipster will add admin modules here */
     ],
     declarations: [

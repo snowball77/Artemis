@@ -31,6 +31,9 @@
         "createdBy": "Created by",
         "createdDate": "Created date",
         "lastModifiedBy": "Modified by",
-        "lastModifiedDate": "Modified date"
+        "lastModifiedDate": "Modified date",
+        "resultsPerPage": "{{ number }} User per page",
+        "showAllResults": "Show all users",
+        "searchForUser": "Search for user - name, email or login (comma separated)"
     }
 }
