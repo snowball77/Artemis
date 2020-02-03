@@ -5,7 +5,7 @@ import { ColumnMode, SortType } from '@swimlane/ngx-datatable';
 import { SortByPipe } from 'app/components/pipes';
 import { compose, filter } from 'lodash/fp';
 import { get, isNumber } from 'lodash';
-import { BaseEntity } from 'app/shared';
+import { BaseEntity, PageableSearch, SearchResult } from 'app/shared';
 import { LocalStorageService } from 'ngx-webstorage';
 
 enum SortOrder {
@@ -24,12 +24,12 @@ const SortOrderIcon = {
     [SortOrder.DESC]: SortIcon.DESC,
 };
 
-type SortProp = {
+export type SortProp = {
     field: string;
     order: SortOrder;
 };
 
-type PagingValue = number | 'all';
+export type PagingValue = number | 'all';
 
 const entityToString = (entity: BaseEntity) => entity.id.toString();
 
@@ -70,18 +70,12 @@ export class DataTableComponent implements OnInit, OnChanges {
     @Input() searchResultFormatter: (entity: BaseEntity) => string = entityToString;
     @Input() customFilter: (entity: BaseEntity) => boolean = () => true;
     @Input() customFilterKey: any = {};
+    @Input() pagedResultProvider: (search: PageableSearch) => SearchResult<BaseEntity>;
 
     /**
      * @property entitiesSizeChange Emits an event when the number of entities displayed changes (e.g. by filtering)
      */
     @Output() entitiesSizeChange = new EventEmitter<number>();
-
-    /**
-     * @property PAGING_VALUES Possible values for the number of entities shown per page of the table
-     * @property DEFAULT_PAGING_VALUE Default number of entities shown per page if the user has no value set for this yet in local storage
-     */
-    readonly PAGING_VALUES: PagingValue[] = [10, 20, 50, 100, 200, 500, 1000, 'all'];
-    readonly DEFAULT_PAGING_VALUE = 50;
 
     /**
      * @property isRendering Rendering state of the table (used for conditional display of the loading indicator)
@@ -97,7 +91,7 @@ export class DataTableComponent implements OnInit, OnChanges {
         sortProp: SortProp;
     };
 
-    constructor(private sortByPipe: SortByPipe, private localStorage: LocalStorageService) {
+    constructor(private sortByPipe: SortByPipe) {
         this.entities = [];
         this.entityCriteria = {
             textSearch: [],
@@ -106,8 +100,6 @@ export class DataTableComponent implements OnInit, OnChanges {
     }
 
     ngOnInit() {
-        this.pagingValue = this.getCachedEntitiesPerPage();
-
         // explicitly bind these callbacks to their current context
         // so that they can be used from child components
         this.onSort = this.onSort.bind(this);
@@ -141,6 +133,8 @@ export class DataTableComponent implements OnInit, OnChanges {
                 rows: this.entities,
                 rowClass: '',
                 scrollbarH: true,
+                externalPaging: !!this.pagedResultProvider,
+                externalSorting: !!this.pagedResultProvider,
             },
             controls: {
                 iconForSortPropField: this.iconForSortPropField,
@@ -165,49 +159,18 @@ export class DataTableComponent implements OnInit, OnChanges {
     }
 
     /**
-     * Returns the translation based on whether a limited number of entities is displayed or all
-     *
-     * @param quantifier Number of entities per page or 'all'
-     */
-    perPageTranslation(quantifier: PagingValue) {
-        return isNumber(quantifier) ? this.entitiesPerPageTranslation : this.showAllEntitiesTranslation;
-    }
-
-    /**
-     * Key that is used for storing this "items per page" setting in local storage
-     */
-    private get perPageCacheKey() {
-        return `${this.entityType}-items-per-page`;
-    }
-
-    /**
-     * Get "items per page" setting from local storage. If it does not exist, use the default.
-     */
-    private getCachedEntitiesPerPage = () => {
-        const cachedValue = this.localStorage.retrieve(this.perPageCacheKey);
-        if (cachedValue) {
-            const parsedValue = parseInt(cachedValue, 10) || cachedValue;
-            if (this.PAGING_VALUES.includes(parsedValue as any)) {
-                return parsedValue as PagingValue;
-            }
-        }
-        return this.DEFAULT_PAGING_VALUE;
-    };
-
-    /**
      * Set the number of entities shown per page (and persist it in local storage).
      * Since the rendering takes a bit, show the loading animation until it completes.
      *
      * @param paging Number of entities per page
      */
-    setEntitiesPerPage = (paging: number) => {
-        this.isRendering = true;
+    set numberOfRowsPerPage(paging: PagingValue) {
+        this.isLoading = true;
         setTimeout(() => {
             this.pagingValue = paging;
-            this.isRendering = false;
+            this.isLoading = false;
         }, 500);
-        this.localStorage.store(this.perPageCacheKey, paging.toString());
-    };
+    }
 
     /**
      * Updates the UI with all available filter/sort settings.
@@ -308,24 +271,6 @@ export class DataTableComponent implements OnInit, OnChanges {
                 });
             }),
         );
-    };
-
-    /**
-     * Method is called when user clicks on an autocomplete suggestion. The input method
-     * searchTextFromEntity determines how the entity is converted to a searchable string.
-     *
-     * @param entity Entity that was selected via autocomplete
-     */
-    onAutocompleteSelect = (entity: BaseEntity) => {
-        this.entityCriteria.textSearch[this.entityCriteria.textSearch.length - 1] = this.searchTextFromEntity(entity);
-        this.updateEntities();
-    };
-
-    /**
-     * Formats the search input.
-     */
-    searchInputFormatter = () => {
-        return this.entityCriteria.textSearch.join(', ');
     };
 
     /**
