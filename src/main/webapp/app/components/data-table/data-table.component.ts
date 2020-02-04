@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, ViewEncapsulation, Input } from '@angular/core';
 import { debounceTime, distinctUntilChanged, map, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { ColumnMode, SortType } from '@swimlane/ngx-datatable';
@@ -15,6 +15,8 @@ import { GenericDatatable, PagingValue, SortOrder } from 'app/components/data-ta
     encapsulation: ViewEncapsulation.None,
 })
 export class DataTableComponent extends GenericDatatable implements OnInit, OnChanges {
+    @Input() allEntities: BaseEntity[] = [];
+
     constructor(private sortByPipe: SortByPipe) {
         super();
         this.entities = [];
@@ -24,11 +26,14 @@ export class DataTableComponent extends GenericDatatable implements OnInit, OnCh
         };
     }
 
-    /**
-     * This context will be passed down to templateRef and will be
-     * available for binding by the local template let declarations
-     */
-    get context() {
+    ngOnChanges(changes: SimpleChanges) {
+        super.ngOnChanges(changes);
+        if (changes.allEntities) {
+            this.updateEntities();
+        }
+    }
+
+    protected get context() {
         return {
             settings: {
                 limit: this.pageLimit,
@@ -40,8 +45,6 @@ export class DataTableComponent extends GenericDatatable implements OnInit, OnCh
                 rows: this.entities,
                 rowClass: '',
                 scrollbarH: true,
-                externalPaging: !!this.pagedResultProvider,
-                externalSorting: !!this.pagedResultProvider,
             },
             controls: {
                 iconForSortPropField: this.iconForSortPropField,

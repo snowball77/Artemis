@@ -38,7 +38,7 @@ export class ProgrammingExerciseImportComponent implements OnInit {
     constructor(private pagingService: ProgrammingExercisePagingService, private activeModal: NgbActiveModal) {}
 
     ngOnInit() {
-        this.content = { resultsOnPage: [], numberOfPages: 0 };
+        this.content = { resultsOnPage: [], numberOfPages: 0, totalElements: 0 };
 
         this.performSearch(this.sort, 0);
         this.performSearch(this.search, 300);

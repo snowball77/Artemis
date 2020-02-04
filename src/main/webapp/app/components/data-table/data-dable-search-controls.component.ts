@@ -5,6 +5,8 @@ import { LocalStorageService } from 'ngx-webstorage';
 import { Observable } from 'rxjs';
 import { entityToString, PagingValue } from 'app/components/data-table/generic-datatable';
 
+export const DEFAULT_PAGING_VALUE = 50;
+
 @Component({
     selector: 'jhi-data-table-search-controls',
     templateUrl: 'data-table-search-controls.html',
@@ -29,15 +31,13 @@ export class DataDableSearchControlsComponent implements OnInit {
 
     ngOnInit(): void {
         this.pagingValue = this.getCachedEntitiesPerPage();
-        this.onPagingValueSelected.emit(this.pagingValue);
     }
 
     /**
      * @property PAGING_VALUES Possible values for the number of entities shown per page of the table
      * @property DEFAULT_PAGING_VALUE Default number of entities shown per page if the user has no value set for this yet in local storage
      */
-    readonly PAGING_VALUES: PagingValue[] = [10, 20, 50, 100, 200, 500, 1000, 'all'];
-    readonly DEFAULT_PAGING_VALUE = 50;
+    readonly PAGING_VALUES: PagingValue[] = [3, 10, 20, 50, 100, 200, 500, 1000, 'all'];
 
     /**
      * Get "items per page" setting from local storage. If it does not exist, use the default.
@@ -47,10 +47,13 @@ export class DataDableSearchControlsComponent implements OnInit {
         if (cachedValue) {
             const parsedValue = parseInt(cachedValue, 10) || cachedValue;
             if (this.PAGING_VALUES.includes(parsedValue as any)) {
+                this.onPagingValueSelected.emit(parsedValue);
                 return parsedValue as PagingValue;
             }
         }
-        return this.DEFAULT_PAGING_VALUE;
+
+        this.onPagingValueSelected.emit(DEFAULT_PAGING_VALUE);
+        return DEFAULT_PAGING_VALUE;
     };
 
     /**

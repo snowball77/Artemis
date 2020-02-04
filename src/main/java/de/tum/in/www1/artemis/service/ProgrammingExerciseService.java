@@ -730,7 +730,7 @@ public class ProgrammingExerciseService {
                         sorted)
                 : programmingExerciseRepository.findByTitleInExerciseOrCourseAndUserHasAccessToCourse(searchTerm, searchTerm, user.getGroups(), sorted);
 
-        return new SearchResultPageDTO<>(exercisePage.getContent(), exercisePage.getTotalPages());
+        return new SearchResultPageDTO<>(exercisePage.getContent(), exercisePage.getTotalPages(), exercisePage.getTotalElements());
     }
 
     public void giveCIProjectPermissions(ProgrammingExercise exercise) {

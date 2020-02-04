@@ -12,7 +12,7 @@
     >
     </jhi-data-table-search-controls>
     <div *ngIf="entities && !isPreparing; else loadingContainer" class="table-responsive">
-        <ng-container *ngTemplateOutlet="templateRef; context: context"></ng-container>
+        <!--        <ng-container *ngTemplateOutlet="templateRef; context: context"></ng-container>-->
     </div>
     <ng-template #loadingContainer>
         <div class="loading-container d-flex justify-content-center align-items-center">

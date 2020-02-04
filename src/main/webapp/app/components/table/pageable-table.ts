@@ -1,6 +1,7 @@
 export interface SearchResult<T> {
     resultsOnPage: T[];
     numberOfPages: number;
+    totalElements: number;
 }
 
 export enum SortingOrder {

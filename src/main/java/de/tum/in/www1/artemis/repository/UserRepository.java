@@ -53,6 +53,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select user from User user")
     Page<User> findAllWithGroups(Pageable pageable);
 
+    @EntityGraph(attributePaths = { "groups" })
+    Page<User> findAllByLoginIgnoreCaseInOrEmailIgnoreCaseInOrFirstNameIgnoreCaseInOrLastNameIgnoreCaseIn(List<String> possibleLogins, List<String> possibleEmails,
+            List<String> possibleFirstNames, List<String> possibleLastNames, Pageable pageable);
+
     @Modifying
     @Query("Update User user set user.lastNotificationRead = utc_timestamp where user.id = :#{#userId}")
     void updateUserNotificationReadDate(@Param("userId") Long userId);

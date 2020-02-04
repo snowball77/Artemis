@@ -1,20 +1,18 @@
 <div>
+    <jhi-data-table-search-controls
+        [searchResultFormatter]="searchResultFormatter"
+        [searchTextFromEntity]="searchTextFromEntity"
+        [entitiesPerPageTranslation]="entitiesPerPageTranslation"
+        [entityType]="entityType"
+        [onSearch]="onSearch"
+        [searchPlaceholderTranslation]="searchPlaceholderTranslation"
+        [showAllEntitiesTranslation]="showAllEntitiesTranslation"
+        (onAutocompleteSelected)="updateEntities()"
+        (onPagingValueSelected)="numberOfRowsPerPage = $event"
+    >
+    </jhi-data-table-search-controls>
     <div *ngIf="entities && !isPreparing; else loadingContainer" class="table-responsive">
-        <ngx-datatable
-            [limit]="pageLimit"
-            [sortType]="SortType.multi"
-            [columnMode]="ColumnMode.force"
-            [headerHeight]="50"
-            [footerHeight]="50"
-            rowHeight="auto"
-            [rows]="entities"
-            [rowClass]="''"
-            [scrollbarH]="true"
-            [externalPaging]="true"
-            [externalSorting]="true"
-        >
-            <ng-container *ngTemplateOutlet="templateRef; context"></ng-container>
-        </ngx-datatable>
+        <ng-container *ngTemplateOutlet="templateRef; context: context"></ng-container>
     </div>
     <ng-template #loadingContainer>
         <div class="loading-container d-flex justify-content-center align-items-center">

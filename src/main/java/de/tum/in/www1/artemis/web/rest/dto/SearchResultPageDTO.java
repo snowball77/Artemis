@@ -21,12 +21,23 @@ public class SearchResultPageDTO<T> {
      */
     private int numberOfPages;
 
+    private long totalElements;
+
     public SearchResultPageDTO() {
     }
 
-    public SearchResultPageDTO(List<T> resultsOnPage, int numberOfPages) {
+    public SearchResultPageDTO(List<T> resultsOnPage, int numberOfPages, long totalElements) {
         this.resultsOnPage = resultsOnPage;
         this.numberOfPages = numberOfPages;
+        this.totalElements = totalElements;
+    }
+
+    public long getTotalElements() {
+        return totalElements;
+    }
+
+    public void setTotalElements(long totalElements) {
+        this.totalElements = totalElements;
     }
 
     public List<T> getResultsOnPage() {

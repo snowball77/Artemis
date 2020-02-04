@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { createRequestOption } from 'app/shared';
+import { createRequestOption, PageableSearch, SearchResult } from 'app/shared';
 import { User } from 'app/core/user/user.model';
 import { SERVER_API_URL } from 'app/app.constants';
 
@@ -27,6 +27,10 @@ export class UserService {
     query(req?: any): Observable<HttpResponse<User[]>> {
         const options = createRequestOption(req);
         return this.http.get<User[]>(this.resourceUrl, { params: options, observe: 'response' });
+    }
+
+    paginatedSearch(search: PageableSearch): Observable<SearchResult<User>> {
+        return this.http.get<SearchResult<User>>(this.resourceUrl, { params: createRequestOption(search) });
     }
 
     delete(login: string): Observable<HttpResponse<void>> {

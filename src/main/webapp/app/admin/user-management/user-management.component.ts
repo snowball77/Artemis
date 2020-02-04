@@ -1,33 +1,28 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { JhiAlertService, JhiEventManager, JhiParseLinks } from 'ng-jhipster';
 import { Subscription } from 'rxjs/Subscription';
 
-import { ITEMS_PER_PAGE } from 'app/shared';
-import { onError } from 'app/utils/global.utils';
+import { PageableSearch, SearchResult } from 'app/shared';
 import { User } from 'app/core/user/user.model';
 import { UserService } from 'app/core/user/user.service';
 import { AccountService } from 'app/core/auth/account.service';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { first, tap } from 'rxjs/operators';
 
 @Component({
     selector: 'jhi-user-management',
     templateUrl: './user-management.component.html',
 })
 export class UserManagementComponent implements OnInit, OnDestroy {
+    private currentSearchParams: PageableSearch;
+
     currentAccount: User;
-    users: User[];
     error: string | null;
     success: string | null;
-    routeData: Subscription;
-    links: any;
-    totalItems: string;
-    itemsPerPage: number;
-    page: number;
-    predicate: string;
-    previousPage: number;
-    reverse: boolean;
+
+    userSearchResult: SearchResult<User>;
 
     private dialogErrorSource = new Subject<string>();
     dialogError$ = this.dialogErrorSource.asObservable();
@@ -40,15 +35,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         private activatedRoute: ActivatedRoute,
         private router: Router,
         private eventManager: JhiEventManager,
-    ) {
-        this.itemsPerPage = ITEMS_PER_PAGE;
-        this.routeData = this.activatedRoute.data.subscribe(data => {
-            this.page = data['pagingParams'].page;
-            this.previousPage = data['pagingParams'].page;
-            this.reverse = data['pagingParams'].ascending;
-            this.predicate = data['pagingParams'].predicate;
-        });
-    }
+    ) {}
 
     /**
      * Retrieves the current user and calls the {@link loadAll} and {@link registerChangeInUsers} methods on init
@@ -56,8 +43,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.accountService.identity().then(user => {
             this.currentAccount = user!;
-            this.loadAll();
-            this.registerChangeInUsers();
         });
     }
 
@@ -65,15 +50,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
      * Unsubscribe from routeData
      */
     ngOnDestroy() {
-        this.routeData.unsubscribe();
         this.dialogErrorSource.unsubscribe();
-    }
-
-    /**
-     * Subscribe to event 'userListModification' and call {@link loadAll} on event broadcast
-     */
-    registerChangeInUsers() {
-        this.eventManager.subscribe('userListModification', () => this.loadAll());
     }
 
     /**
@@ -88,7 +65,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
             if (response.status === 200) {
                 this.error = null;
                 this.success = 'OK';
-                this.loadAll();
             } else {
                 this.success = null;
                 this.error = 'ERROR';
@@ -96,31 +72,22 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         });
     }
 
-    /**
-     * Retrieve the list of users from the user service for a single page in the user management based on the page, size and sort configuration
-     */
-    loadAll() {
+    searchForUsers(search: PageableSearch): void {
+        this.currentSearchParams = search;
         this.userService
-            .query({
-                page: this.page - 1,
-                size: this.itemsPerPage,
-                sort: this.sort(),
-            })
-            .subscribe(
-                (res: HttpResponse<User[]>) => this.onSuccess(res.body!, res.headers),
-                (res: HttpErrorResponse) => onError(this.alertService, res),
-            );
+            .paginatedSearch(search)
+            .pipe(
+                first(),
+                tap((result: SearchResult<User>) => {
+                    this.userSearchResult = result;
+                }),
+            )
+            .subscribe();
     }
 
-    /**
-     * Sorts parameters by specified order
-     */
-    sort() {
-        const result = [this.predicate + ',' + (this.reverse ? 'asc' : 'desc')];
-        if (this.predicate !== 'id') {
-            result.push('id');
-        }
-        return result;
+    set changedPage(page: number) {
+        this.currentSearchParams.page = page;
+        this.searchForUsers(this.currentSearchParams);
     }
 
     /**
@@ -138,12 +105,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
             },
             (error: HttpErrorResponse) => this.dialogErrorSource.next(error.message),
         );
-    }
-
-    private onSuccess(data: User[], headers: HttpHeaders) {
-        this.links = this.parseLinks.parse(headers.get('link')!);
-        this.totalItems = headers.get('X-Total-Count')!;
-        this.users = data;
     }
 
     /**

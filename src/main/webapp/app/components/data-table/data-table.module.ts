@@ -9,6 +9,6 @@ import { ServerSidePaginatedDatatableComponent } from 'app/components/data-table
 @NgModule({
     imports: [ArtemisSharedModule, NgxDatatableModule],
     declarations: [DataTableComponent, DataDableSearchControlsComponent, ServerSidePaginatedDatatableComponent],
-    exports: [DataTableComponent],
+    exports: [DataTableComponent, ServerSidePaginatedDatatableComponent],
 })
 export class ArtemisDataTableModule {}

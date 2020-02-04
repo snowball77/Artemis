@@ -1,7 +1,10 @@
-import { ContentChild, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, TemplateRef } from '@angular/core';
+import { ContentChild, ContentChildren, EventEmitter, Input, OnChanges, OnInit, Output, QueryList, SimpleChanges, TemplateRef, ViewChild } from '@angular/core';
 import { BaseEntity, PageableSearch, SearchResult } from 'app/shared';
 import { isNumber } from 'lodash';
 import { Observable } from 'rxjs';
+import { DEFAULT_PAGING_VALUE } from 'app/components/data-table/data-dable-search-controls.component';
+import { ColumnMode, DataTableColumnDirective, DatatableComponent, SortType } from '@swimlane/ngx-datatable';
+import { Template } from '@angular/compiler/src/render3/r3_ast';
 
 export enum SortOrder {
     ASC = 'asc',
@@ -50,7 +53,6 @@ export abstract class GenericDatatable implements OnInit, OnChanges {
      */
     @Input() isLoading = false;
     @Input() entityType = 'entity';
-    @Input() allEntities: BaseEntity[] = [];
     @Input() entitiesPerPageTranslation: string;
     @Input() showAllEntitiesTranslation: string;
     @Input() searchPlaceholderTranslation: string;
@@ -59,7 +61,6 @@ export abstract class GenericDatatable implements OnInit, OnChanges {
     @Input() searchResultFormatter: (entity: BaseEntity) => string = entityToString;
     @Input() customFilter: (entity: BaseEntity) => boolean = () => true;
     @Input() customFilterKey: any = {};
-    @Input() pagedResultProvider: (search: PageableSearch) => SearchResult<BaseEntity>;
 
     /**
      * @property entitiesSizeChange Emits an event when the number of entities displayed changes (e.g. by filtering)
@@ -74,7 +75,7 @@ export abstract class GenericDatatable implements OnInit, OnChanges {
      */
     protected isRendering: boolean;
     protected entities: BaseEntity[];
-    protected pagingValue: PagingValue;
+    protected pagingValue: PagingValue = DEFAULT_PAGING_VALUE;
     protected entityCriteria: {
         textSearch: string[];
         sortProp: SortProp;
@@ -93,7 +94,7 @@ export abstract class GenericDatatable implements OnInit, OnChanges {
      * @param changes List of Inputs that were changed
      */
     ngOnChanges(changes: SimpleChanges) {
-        if (changes.allEntities || changes.customFilterKey) {
+        if (changes.customFilterKey) {
             this.updateEntities();
         }
     }
@@ -115,6 +116,12 @@ export abstract class GenericDatatable implements OnInit, OnChanges {
     protected abstract onSearch(search$: Observable<string>): Observable<boolean | BaseEntity[]>;
 
     protected abstract updateEntities(): void;
+
+    /**
+     * This context will be passed down to templateRef and will be
+     * available for binding by the local template let declarations
+     */
+    protected abstract get context(): any;
 
     /**
      * The component is preparing if the data is loading (managed by the parent component)
