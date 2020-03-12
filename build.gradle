@@ -356,7 +356,7 @@ task executeCheckstyle (type: Exec) {
 }
 
 task buildJarForDocker (type: Exec) {
-    commandLine "./gradlew", "build", "-x", "webpack", "-x", "test", "-x", "checkstyleTest" // TODO sleiss: Check if checkstyleTest should be re-enabled
+    commandLine "./gradlew", "build", "-x", "webpack", "-x", "test", "-x", "checkstyleTest", "-x", "spotbugsMain" // TODO sleiss: Check if checkstyleTest, spotbugsMain should be re-enabled
 }
 
 // Available commands:
