@@ -3,8 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { AlertService } from 'app/core/alert/alert.service';
 import { Observable, Subject } from 'rxjs';
-import { CourseManagementService } from '../../../../course/manage/course-management.service';
-import { ProgrammingExercise, ProgrammingLanguage } from '../../../../entities/programming-exercise.model';
+import { CourseManagementService } from 'app/course/manage/course-management.service';
+import { ProgrammingExercise, ProgrammingLanguage } from 'app/entities/programming-exercise.model';
 import { ProgrammingExerciseService } from '../services/programming-exercise.service';
 import { FileService } from 'app/shared/http/file.service';
 import { MAX_SCORE_PATTERN } from 'app/app.constants';
@@ -91,13 +91,13 @@ export class ProgrammingExerciseUpdateComponent implements OnInit {
         // If it is an import, just get the course, otherwise handle the edit and new cases
         this.activatedRoute.url
             .pipe(
-                tap(segments => (this.isImport = segments.some(segment => segment.path === 'import'))),
+                tap((segments) => (this.isImport = segments.some((segment) => segment.path === 'import'))),
                 switchMap(() => this.activatedRoute.params),
-                tap(params => {
+                tap((params) => {
                     if (this.isImport) {
                         const targetCourseId = params['courseId'];
                         this.isImport = true;
-                        this.courseService.find(targetCourseId).subscribe(res => (this.programmingExercise.course = res.body!));
+                        this.courseService.find(targetCourseId).subscribe((res) => (this.programmingExercise.course = res.body!));
 
                         this.programmingExercise.dueDate = null;
                         this.programmingExercise.projectKey = null;
@@ -109,7 +109,7 @@ export class ProgrammingExerciseUpdateComponent implements OnInit {
                     } else {
                         if (params['courseId']) {
                             const courseId = params['courseId'];
-                            this.courseService.find(courseId).subscribe(res => {
+                            this.courseService.find(courseId).subscribe((res) => {
                                 const course = res.body!;
                                 this.programmingExercise.course = course;
                                 this.exerciseCategories = this.exerciseService.convertExerciseCategoriesFromServer(this.programmingExercise);
@@ -146,7 +146,7 @@ export class ProgrammingExerciseUpdateComponent implements OnInit {
     }
 
     updateCategories(categories: ExerciseCategory[]) {
-        this.programmingExercise.categories = categories.map(el => JSON.stringify(el));
+        this.programmingExercise.categories = categories.map((el) => JSON.stringify(el));
     }
 
     save() {
@@ -189,6 +189,7 @@ export class ProgrammingExerciseUpdateComponent implements OnInit {
         const jhiAlert = this.jhiAlertService.error(errorMessage);
         jhiAlert.msg = errorMessage;
         this.isSaving = false;
+        window.scrollTo(0, 0);
     }
 
     private onError(error: HttpErrorResponse) {
@@ -226,11 +227,11 @@ export class ProgrammingExerciseUpdateComponent implements OnInit {
         this.problemStatementLoaded = false;
         this.programmingExercise.programmingLanguage = language;
         this.fileService.getTemplateFile('readme', this.programmingExercise.programmingLanguage).subscribe(
-            file => {
+            (file) => {
                 this.programmingExercise.problemStatement = file;
                 this.problemStatementLoaded = true;
             },
-            err => {
+            (err) => {
                 this.programmingExercise.problemStatement = '';
                 this.problemStatementLoaded = true;
                 console.log('Error while getting template instruction file!', err);

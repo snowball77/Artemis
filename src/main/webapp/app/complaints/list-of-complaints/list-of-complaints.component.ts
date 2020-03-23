@@ -14,6 +14,7 @@ import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { cloneDeep } from 'lodash';
 
 @Component({
+    // TODO this selector is used twice which is not good!!!
     selector: 'jhi-complaint-form',
     templateUrl: './list-of-complaints.component.html',
     providers: [],
@@ -45,14 +46,14 @@ export class ListOfComplaintsComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        this.route.params.subscribe(params => {
+        this.route.params.subscribe((params) => {
             this.courseId = Number(params['courseId']);
             this.exerciseId = Number(params['exerciseId']);
         });
-        this.route.queryParams.subscribe(queryParams => {
+        this.route.queryParams.subscribe((queryParams) => {
             this.tutorId = Number(queryParams['tutorId']);
         });
-        this.route.data.subscribe(data => (this.complaintType = data.complaintType));
+        this.route.data.subscribe((data) => (this.complaintType = data.complaintType));
         this.loadComplaints();
     }
 
@@ -74,9 +75,9 @@ export class ListOfComplaintsComponent implements OnInit {
         }
 
         complaintResponse.subscribe(
-            res => {
+            (res) => {
                 this.complaints = res.body!;
-                this.complaintsToShow = this.complaints.filter(complaint => complaint.accepted === undefined);
+                this.complaintsToShow = this.complaints.filter((complaint) => complaint.accepted === undefined);
 
                 if (this.complaints.length > 0 && this.complaints[0].student) {
                     this.hasStudentInformation = true;
@@ -114,7 +115,7 @@ export class ListOfComplaintsComponent implements OnInit {
                 modalRef.componentInstance.result = cloneDeep(complaint.result);
                 modalRef.componentInstance.onResultModified.subscribe(() => this.loadComplaints());
                 modalRef.result.then(
-                    _ => this.loadComplaints(),
+                    (_) => this.loadComplaints(),
                     () => {},
                 );
                 return;
@@ -138,7 +139,7 @@ export class ListOfComplaintsComponent implements OnInit {
         if (this.showAddressedComplaints) {
             this.complaintsToShow = this.complaints;
         } else {
-            this.complaintsToShow = this.complaints.filter(complaint => complaint.accepted === undefined);
+            this.complaintsToShow = this.complaints.filter((complaint) => complaint.accepted === undefined);
         }
     }
 

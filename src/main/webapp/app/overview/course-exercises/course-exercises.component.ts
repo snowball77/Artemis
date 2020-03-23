@@ -1,13 +1,13 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Course } from 'app/entities/course.model';
-import { CourseManagementService } from '../../course/manage/course-management.service';
+import { CourseManagementService } from 'app/course/manage/course-management.service';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs/Subscription';
 import { TranslateService } from '@ngx-translate/core';
 import { HttpResponse } from '@angular/common/http';
 import * as moment from 'moment';
 import { AccountService } from 'app/core/auth/account.service';
-import { sum } from 'lodash';
+import { sum, flatten, maxBy } from 'lodash';
 import { GuidedTourService } from 'app/guided-tour/guided-tour.service';
 import { courseExerciseOverviewTour } from 'app/guided-tour/tours/course-exercise-overview-tour';
 import { isOrion } from 'app/shared/orion/orion';
@@ -80,9 +80,9 @@ export class CourseExercisesComponent implements OnInit, OnDestroy {
             : [];
         this.activeFilters = new Set(filtersInStorage);
         const orderInStorage = this.localStorage.retrieve(SortFilterStorageKey.ORDER);
-        const parsedOrderInStorage = Object.keys(ExerciseSortingOrder).find(exerciseOrder => exerciseOrder === orderInStorage);
+        const parsedOrderInStorage = Object.keys(ExerciseSortingOrder).find((exerciseOrder) => exerciseOrder === orderInStorage);
         this.sortingOrder = parsedOrderInStorage ? (+parsedOrderInStorage as ExerciseSortingOrder) : ExerciseSortingOrder.DUE_DATE_ASC;
-        this.paramSubscription = this.route.parent!.params.subscribe(params => {
+        this.paramSubscription = this.route.parent!.params.subscribe((params) => {
             this.courseId = parseInt(params['courseId'], 10);
         });
 
@@ -128,19 +128,18 @@ export class CourseExercisesComponent implements OnInit, OnDestroy {
      * @param filters The filters which should be applied
      */
     toggleFilters(filters: ExerciseFilter[]) {
-        filters.forEach(filter => (this.activeFilters.has(filter) ? this.activeFilters.delete(filter) : this.activeFilters.add(filter)));
+        filters.forEach((filter) => (this.activeFilters.has(filter) ? this.activeFilters.delete(filter) : this.activeFilters.add(filter)));
         this.localStorage.store(SortFilterStorageKey.FILTER, Array.from(this.activeFilters).join(','));
         this.applyFiltersAndOrder();
     }
 
     /**
-     * Checks if the given exercise still needs work, i.e. is not graded with 100%, or wasn't even started, yet.
+     * Checks if the given exercise still needs work, i.e. wasn't even started yet or is not graded with 100%
      * @param exercise The exercise which should get checked
      */
     private needsWork(exercise: Exercise): boolean {
-        const notFullPoints = exercise.studentParticipations.some(participation => participation.results && participation.results.some(result => result.score !== 100));
-        const notStartedYet = exercise.studentParticipations.every(participation => !participation.results.length);
-        return notFullPoints || notStartedYet;
+        const latestResult = maxBy(flatten(exercise.studentParticipations.map((participation) => participation.results)), 'completionDate');
+        return !latestResult || latestResult.score !== 100;
     }
 
     /**
@@ -150,7 +149,7 @@ export class CourseExercisesComponent implements OnInit, OnDestroy {
         const needsWorkFilterActive = this.activeFilters.has(ExerciseFilter.NEEDS_WORK);
         const overdueFilterActive = this.activeFilters.has(ExerciseFilter.OVERDUE);
         const filtered = this.course!.exercises.filter(
-            exercise =>
+            (exercise) =>
                 (!needsWorkFilterActive || this.needsWork(exercise)) &&
                 (!exercise.dueDate || !overdueFilterActive || exercise.dueDate.isAfter(moment(new Date()))) &&
                 (!isOrion || exercise.type === ExerciseType.PROGRAMMING),
@@ -168,27 +167,19 @@ export class CourseExercisesComponent implements OnInit, OnDestroy {
         const sortedExercises = this.sortExercises(exercises);
         const notAssociatedExercises: Exercise[] = [];
         const upcomingExercises: Exercise[] = [];
-        sortedExercises.forEach(exercise => {
+        sortedExercises.forEach((exercise) => {
             const dateValue = exercise.dueDate;
             this.increaseExerciseCounter(exercise);
             if (!dateValue) {
                 notAssociatedExercises.push(exercise);
                 return;
             }
-            const dateIndex = dateValue
-                ? moment(dateValue)
-                      .startOf('week')
-                      .format('YYYY-MM-DD')
-                : 'NoDate';
+            const dateIndex = dateValue ? moment(dateValue).startOf('week').format('YYYY-MM-DD') : 'NoDate';
             if (!groupedExercises[dateIndex]) {
                 indexKeys.push(dateIndex);
                 if (dateValue) {
                     groupedExercises[dateIndex] = {
-                        label: `<b>${moment(dateValue)
-                            .startOf('week')
-                            .format('DD/MM/YYYY')}</b> - <b>${moment(dateValue)
-                            .endOf('week')
-                            .format('DD/MM/YYYY')}</b>`,
+                        label: `<b>${moment(dateValue).startOf('week').format('DD/MM/YYYY')}</b> - <b>${moment(dateValue).endOf('week').format('DD/MM/YYYY')}</b>`,
                         isCollapsed: dateValue.isBefore(moment(), 'week'),
                         isCurrentWeek: dateValue.isSame(moment(), 'week'),
                         exercises: [],

@@ -7,6 +7,7 @@ import { escapeStringForUseInRegex } from 'app/shared/util/global.utils';
 export abstract class DomainCommand extends Command {
     abstract getOpeningIdentifier(): string; // e.g. [exp]
     abstract getClosingIdentifier(): string; // e.g. [/exp]
+    displayCommandButton = true;
 
     /**
      * Generate a regex that can be used to get the content alone or including the tags.
@@ -25,10 +26,7 @@ export abstract class DomainCommand extends Command {
      */
     isCursorWithinTag(): { matchStart: number; matchEnd: number; innerTagContent: string } | null {
         const { row, column } = this.aceEditorContainer.getEditor().getCursorPosition(),
-            line = this.aceEditorContainer
-                .getEditor()
-                .getSession()
-                .getLine(row),
+            line = this.aceEditorContainer.getEditor().getSession().getLine(row),
             regex = this.getTagRegex('g');
 
         const indexes: Array<{ matchStart: number; matchEnd: number; innerTagContent: string }> = [];
@@ -46,10 +44,7 @@ export abstract class DomainCommand extends Command {
      * Returns the content between the identifiers if there is match, otherwise returns null.
      */
     isTagInRow(row: number): { matchStart: number; matchEnd: number; innerTagContent: string } | null {
-        const line = this.aceEditorContainer
-                .getEditor()
-                .getSession()
-                .getLine(row),
+        const line = this.aceEditorContainer.getEditor().getSession().getLine(row),
             regex = this.getTagRegex();
 
         if (!line) {

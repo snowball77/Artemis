@@ -18,6 +18,7 @@ import { Complaint, ComplaintType } from 'app/entities/complaint.model';
 export class ComplaintsComponent implements OnInit {
     @Input() resultId: number;
     @Input() allowedComplaints: number; // the number of complaints that a student can still submit in the course
+    @Input() maxComplaintsPerCourse: number;
     @Input() complaintType: ComplaintType;
     @Output() submit: EventEmitter<void> = new EventEmitter();
     complaintText = '';
@@ -29,16 +30,14 @@ export class ComplaintsComponent implements OnInit {
     ComplaintType = ComplaintType;
     loaded = true;
 
-    readonly maxComplaintNumberPerStudent = 3; // please note that this number has to be the same as in Constant.java on the server
-
     constructor(private complaintService: ComplaintService, private jhiAlertService: AlertService, private complaintResponseService: ComplaintResponseService) {}
 
     ngOnInit(): void {
         this.complaintService
             .findByResultId(this.resultId)
-            .pipe(filter(res => !!res.body))
+            .pipe(filter((res) => !!res.body))
             .subscribe(
-                res => {
+                (res) => {
                     this.complaintText = res.body!.complaintText;
                     this.alreadySubmitted = true;
                     this.submittedDate = res.body!.submittedTime!;
@@ -46,7 +45,7 @@ export class ComplaintsComponent implements OnInit {
                     this.handled = this.accepted !== undefined;
 
                     if (this.handled) {
-                        this.complaintResponseService.findByComplaintId(res.body!.id).subscribe(complaintResponse => (this.complaintResponse = complaintResponse.body!));
+                        this.complaintResponseService.findByComplaintId(res.body!.id).subscribe((complaintResponse) => (this.complaintResponse = complaintResponse.body!));
                     }
                 },
                 (err: HttpErrorResponse) => {
@@ -64,7 +63,7 @@ export class ComplaintsComponent implements OnInit {
         complaint.complaintType = this.complaintType;
 
         this.complaintService.create(complaint).subscribe(
-            res => {
+            (res) => {
                 this.submittedDate = res.body!.submittedTime!;
                 this.alreadySubmitted = true;
                 if (complaint.complaintType === ComplaintType.COMPLAINT) {
@@ -76,7 +75,7 @@ export class ComplaintsComponent implements OnInit {
             (err: HttpErrorResponse) => {
                 this.loaded = true;
                 if (err && err.error && err.error.errorKey === 'toomanycomplaints') {
-                    this.jhiAlertService.error('artemisApp.complaint.tooManyComplaints', { maxComplaintNumber: this.maxComplaintNumberPerStudent });
+                    this.jhiAlertService.error('artemisApp.complaint.tooManyComplaints', { maxComplaintNumber: this.maxComplaintsPerCourse });
                 } else {
                     this.onError(err.message);
                 }

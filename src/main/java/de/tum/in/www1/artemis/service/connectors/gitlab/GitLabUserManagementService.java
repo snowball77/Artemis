@@ -79,11 +79,11 @@ public class GitLabUserManagementService implements VcsUserManagementService {
 
     @Override
     public void updateUser(User user, Set<String> removedGroups, Set<String> addedGroups) {
-        if (removedGroups.isEmpty() && addedGroups.isEmpty()) {
-            return;
-        }
         try {
             final var gitlabUser = gitlab.getUserApi().getUser(user.getLogin());
+
+            // update the user password
+            gitlab.getUserApi().updateUser(gitlabUser, userService.decryptPasswordByLogin(user.getLogin()).get());
 
             // Add as member to new groups
             if (!addedGroups.isEmpty()) {
@@ -112,7 +112,6 @@ public class GitLabUserManagementService implements VcsUserManagementService {
                         gitlab.getGroupApi().removeMember(exercise.getProjectKey(), gitlabUser.getId());
                     }
                 }
-                gitlab.getUserApi().updateUser(gitlabUser, userService.decryptPasswordByLogin(user.getLogin()).get());
             }
         }
         catch (GitLabApiException e) {
@@ -286,7 +285,11 @@ public class GitLabUserManagementService implements VcsUserManagementService {
 
     int getUserId(String username) {
         try {
-            return gitlab.getUserApi().getUser(username).getId();
+            var gitlabUser = gitlab.getUserApi().getUser(username);
+            if (gitlabUser != null) {
+                return gitlabUser.getId();
+            }
+            throw new GitLabException("Unable to get ID for user " + username);
         }
         catch (GitLabApiException e) {
             throw new GitLabException("Unable to get ID for user " + username, e);

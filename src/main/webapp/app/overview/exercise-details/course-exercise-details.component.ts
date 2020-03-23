@@ -24,6 +24,7 @@ import { participationStatus } from 'app/exercises/shared/exercise/exercise-util
 import { ProgrammingExercise } from 'app/entities/programming-exercise.model';
 import { ProgrammingExerciseStudentParticipation } from 'app/entities/participation/programming-exercise-student-participation.model';
 import { JhiWebsocketService } from 'app/core/websocket/websocket.service';
+import { GradingCriterion } from 'app/exercises/shared/structured-grading-criterion/grading-criterion.model';
 
 const MAX_RESULT_HISTORY_LENGTH = 5;
 
@@ -50,6 +51,7 @@ export class CourseExerciseDetailsComponent implements OnInit, OnDestroy {
     private participationUpdateListener: Subscription;
     studentParticipation: StudentParticipation | null;
     isAfterAssessmentDueDate: boolean;
+    public gradingCriteria: GradingCriterion[];
 
     showWelcomeAlert = false;
 
@@ -70,7 +72,7 @@ export class CourseExerciseDetailsComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit() {
-        this.subscription = this.route.params.subscribe(params => {
+        this.subscription = this.route.params.subscribe((params) => {
             const didExerciseChange = this.exerciseId !== parseInt(params['exerciseId'], 10);
             const didCourseChange = this.courseId !== parseInt(params['courseId'], 10);
             this.exerciseId = parseInt(params['exerciseId'], 10);
@@ -83,7 +85,7 @@ export class CourseExerciseDetailsComponent implements OnInit, OnDestroy {
             }
         });
 
-        this.route.queryParams.subscribe(queryParams => {
+        this.route.queryParams.subscribe((queryParams) => {
             if (queryParams['welcome'] === '') {
                 setTimeout(() => {
                     this.showWelcomeAlert = true;
@@ -182,7 +184,7 @@ export class CourseExerciseDetailsComponent implements OnInit, OnDestroy {
 
     subscribeForNewResults() {
         if (this.exercise && this.exercise.studentParticipations && this.exercise.studentParticipations.length > 0) {
-            this.exercise.studentParticipations.forEach(participation => {
+            this.exercise.studentParticipations.forEach((participation) => {
                 this.participationWebsocketService.addParticipation(participation, this.exercise!);
             });
             if (this.currentResult) {
@@ -197,7 +199,7 @@ export class CourseExerciseDetailsComponent implements OnInit, OnDestroy {
             if (changedParticipation && this.exercise && changedParticipation.exercise.id === this.exercise.id) {
                 this.exercise.studentParticipations =
                     this.exercise.studentParticipations && this.exercise.studentParticipations.length > 0
-                        ? this.exercise.studentParticipations.map(el => {
+                        ? this.exercise.studentParticipations.map((el) => {
                               return el.id === changedParticipation.id ? changedParticipation : el;
                           })
                         : [changedParticipation];

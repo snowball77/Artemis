@@ -49,12 +49,11 @@ export function createExercise(artemis, courseId) {
         assessmentType: 'AUTOMATIC',
         type: 'programming',
         programmingLanguage: 'JAVA',
-        publishBuildPlanUrl: true,
         allowOnlineEditor: true,
-        packageName: 'de.test',
+        packageName: 'de.test.in.ase',
         problemStatement: programmingExerciseProblemStatement,
         presentationScoreEnabled: false,
-        sequentialTestRuns: true,
+        sequentialTestRuns: false,
         mode: 'INDIVIDUAL',
         course: {
             id: courseId
@@ -63,7 +62,11 @@ export function createExercise(artemis, courseId) {
 
     res = artemis.post(PROGRAMMING_EXERCISES_SETUP, exercise);
     if (res[0].status !== 201) {
-        fail('ERROR: Could not create exercise (' + res[0].status + ')! response was + ' + res[0].body);
+        console.log("ERROR when creating a new programming exercise. Response headers:");
+        for (let [key, value] of Object.entries(res[0].headers)) {
+            console.log(`${key}: ${value}`);
+        }
+        fail('ERROR: Could not create exercise (status: ' + res[0].status + ')! response: ' + res[0].body);
     }
     const exerciseId = JSON.parse(res[0].body).id;
     console.log('CREATED new programming exercise, ID=' + exerciseId);
@@ -83,6 +86,7 @@ export function deleteExercise(artemis, exerciseId) {
 }
 
 export function startExercise(artemis, courseId, exerciseId) {
+    console.log('Try to start exercise for test user ' + __VU);
     const res = artemis.post(PARTICIPATIONS(courseId, exerciseId), null, null);
     // console.log('RESPONSE of starting exercise: ' + res[0].body);
 
@@ -92,7 +96,7 @@ export function startExercise(artemis, courseId, exerciseId) {
     }
 
     if (res[0].status !== 201) {
-        fail('ERROR trying to start exercise for ' + __VU + ':\n #####ERROR (' + res[0].status + ')##### ' + res[0].body);
+        fail('ERROR trying to start exercise for test user ' + __VU + ':\n #####ERROR (' + res[0].status + ')##### ' + res[0].body);
     } else {
         console.log('SUCCESSFULLY started exercise for test user ' + __VU);
     }
