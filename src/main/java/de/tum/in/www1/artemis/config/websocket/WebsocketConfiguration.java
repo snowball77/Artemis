@@ -19,6 +19,7 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -147,5 +148,10 @@ public class WebsocketConfiguration extends WebSocketMessageBrokerConfigurationS
                 return principal;
             }
         };
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new TopicSubscriptionInterceptor());
     }
 }

@@ -33,6 +33,6 @@ public class TopicSubscriptionInterceptor implements ChannelInterceptor {
             return false;
         }
         // Additional validation logic coming here
-        return false;
+        return true;
     }
 }

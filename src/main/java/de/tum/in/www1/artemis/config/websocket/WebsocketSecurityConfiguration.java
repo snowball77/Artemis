@@ -2,7 +2,6 @@ package de.tum.in.www1.artemis.config.websocket;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.SimpMessageType;
-import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
 
@@ -23,10 +22,5 @@ public class WebsocketSecurityConfiguration extends AbstractSecurityWebSocketMes
                 .simpTypeMatchers(SimpMessageType.MESSAGE, SimpMessageType.SUBSCRIBE).denyAll()
                 // catch all
                 .anyMessage().denyAll();
-    }
-
-    @Override
-    public void customizeClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new TopicSubscriptionInterceptor());
     }
 }
