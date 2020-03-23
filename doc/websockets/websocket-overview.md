@@ -3,7 +3,7 @@
 ## Client -> Server
 | Topic     | When |
 |------------------|----|
-| `${this.websocketResourceUrlSend}/files` | CodeEditorRepositoryFileService:updateFiles |
+| '${this.websocketResourceUrlSend}/files' | CodeEditorRepositoryFileService:updateFiles |
 | '/topic/quizExercise/' + this.quizId + '/submission' | QuizParticipationComponent:onSubmit |
 
 
@@ -23,28 +23,28 @@
 | submission | ProgrammingSubmissionService |
 
 ### Subscriptions on Client:
-| Topic     | When |
-|------------------|----|
-| '/topic/tracker' | ngOnInit |
-| '/user/topic/modelingSubmission/' + this.submission.id | subscribeToAutomaticSubmissionWebsocket |
-| `/topic/programming-exercise/${exerciseId}/test-cases` | initTestCaseSubscription |
-| `/topic/programming-exercises/${programmingExerciseId}/test-cases-changed` | initTestCaseStateSubscription |
-| '/topic/programming-exercises/%programmingExerciseId%/all-builds-triggered' | ProgrammingBuildRunService |
-| '/topic/participation/%participationId%/newSubmission' | ProgrammingSubmissionService |
-| `${this.websocketResourceUrlReceive}/files` | CodeEditorRepositoryFileService |
-| '/topic/statistic/' + params['exerciseId'] | DragAndDropQuestionStatisticComponent |
-| '/topic/statistic/' + params['exerciseId'] | MultipleChoiceQuestionStatisticComponent |
-| '/topic/statistic/' + params['exerciseId'] | QuizPointStatisticComponent |
-| '/topic/quizExercise/' + params['exerciseId'] | QuizPointStatisticComponent |
-| '/topic/statistic/' + params['exerciseId'] | QuizStatisticComponent |
-| '/topic/statistic/' + params['exerciseId'] | ShortAnswerQuestionStatisticComponent |
-| '/user/topic/quizExercise/' + this.quizId + '/submission' | QuizParticipationComponent |
-| '/user/topic/quizExercise/' + this.quizId + '/participation' | QuizParticipationComponent |
-| '/topic/quizExercise/' + this.quizId | QuizParticipationComponent |
-| `/topic/participation/${participationId}/newResults` | ParticipationWebsocketService |
-| `/topic/user/${user.id}/notifications` | NotificationService |
-| `/topic/course/${course.id}/${GroupNotificationType.STUDENT}` | NotificationService |
-| `/topic/course/${course.id}/${GroupNotificationType.INSTRUCTOR}` | NotificationService |
-| `/topic/course/${course.id}/${GroupNotificationType.TA}` | NotificationService |
-| `/topic/management/feature-toggles` | FeatureToggleService |
-| '/topic/system-notification' | SystemNotificationComponent |
+| Topic     | When | Who |
+|------------------|----|----|
+| '/topic/tracker' | ngOnInit | Admin |
+| '/user/topic/modelingSubmission/' + this.submission.id | subscribeToAutomaticSubmissionWebsocket | Student/Team of submission |
+| '/topic/programming-exercise/${exerciseId}/test-cases' | initTestCaseSubscription (editing of test cases) | Instructor |
+| '/topic/programming-exercises/${programmingExerciseId}/test-cases-changed' | initTestCaseStateSubscription | Instructor |
+| '/topic/programming-exercises/%programmingExerciseId%/all-builds-triggered' | ProgrammingBuildRunService | Instructor (Trigger all builds) |
+| '/topic/participation/%participationId%/newSubmission' | ProgrammingSubmissionService | Student/Team of participation |
+| '${this.websocketResourceUrlReceive}/files' | CodeEditorRepositoryFileService | Instructor/TA |
+| '/topic/statistic/' + params['exerciseId'] | DragAndDropQuestionStatisticComponent | Instructor/TA |
+| '/topic/statistic/' + params['exerciseId'] | MultipleChoiceQuestionStatisticComponent | Instructor/TA |
+| '/topic/statistic/' + params['exerciseId'] | QuizPointStatisticComponent | Instructor/TA |
+| '/topic/statistic/' + params['exerciseId'] | QuizStatisticComponent | Instructor/TA |
+| '/topic/statistic/' + params['exerciseId'] | ShortAnswerQuestionStatisticComponent | Instructor/TA |
+| '/topic/quizExercise/' + params['exerciseId'] | QuizPointStatisticComponent | Instructor/TA |
+| '/user/topic/quizExercise/' + this.quizId + '/submission' | QuizParticipationComponent | Student |
+| '/user/topic/quizExercise/' + this.quizId + '/participation' | QuizParticipationComponent | Student |
+| '/topic/quizExercise/' + this.quizId | QuizParticipationComponent | Student |
+| '/topic/participation/${participationId}/newResults' | ParticipationWebsocketService | Student/Team of participation |
+| '/topic/user/${user.id}/notifications' | NotificationService | User with ID |
+| '/topic/course/${course.id}/${GroupNotificationType.STUDENT}' | NotificationService | Student |
+| '/topic/course/${course.id}/${GroupNotificationType.INSTRUCTOR}' | NotificationService | Instructor |
+| '/topic/course/${course.id}/${GroupNotificationType.TA}' | NotificationService | TA |
+| '/topic/management/feature-toggles' | FeatureToggleService | Everyone |
+| '/topic/system-notification' | SystemNotificationComponent | Everyone |
