@@ -31,18 +31,18 @@ services:
       - ./:/server/
     working_dir: /server
 
-  artemis-client:
-    command: sh -c "yarn install && yarn start-docker"
-    depends_on:
-      - artemis-server
-    image: node:12.8.0-alpine
-    networks:
-      - artemis
-    ports:
-      - 9000:9000
-    volumes:
-      - ./:/client/
-    working_dir: /client
+#  artemis-client:
+#    command: sh -c "yarn install && yarn start-docker"
+#    depends_on:
+#      - artemis-server
+#    image: node:12.8.0-alpine
+#    networks:
+#      - artemis
+#    ports:
+#      - 9000:9000
+#    volumes:
+#      - ./:/client/
+#    working_dir: /client
 
   artemis-mysql:
     command: mysqld --lower_case_table_names=1 --skip-ssl --character_set_server=utf8mb4 --explicit_defaults_for_timestamp
