@@ -32,12 +32,11 @@ plugins {
     id "net.ltgt.apt-idea"
     id "net.ltgt.apt"
     //jhipster-needle-gradle-plugins - JHipster will add additional gradle plugins here
-    id "com.diffplug.gradle.spotless" version "3.28.0"
-    id "com.github.spotbugs" version "4.0.0"
+    id "com.diffplug.gradle.spotless" version "3.28.1"
 }
 
 group = "de.tum.in.www1.artemis"
-version = "3.11.0"
+version = "3.11.1"
 description = "Interactive Learning with Individual Feedback"
 
 sourceCompatibility=12
@@ -82,20 +81,6 @@ spotless {
         importOrderFile "artemis-spotless.importorder"
         removeUnusedImports()
         eclipse().configFile "artemis-spotless-style.xml"
-    }
-}
-
-spotbugs {
-    toolVersion = '4.0.0'
-    ignoreFailures = true
-    effort = 'max'
-    showProgress = true
-}
-
-spotbugsMain {
-    reports {
-        xml.enabled = false
-        html.enabled = true
     }
 }
 
@@ -173,7 +158,7 @@ repositories {
 
 dependencies {
     implementation 'com.offbytwo.jenkins:jenkins-client:0.3.8'
-    implementation 'org.gitlab4j:gitlab4j-api:4.14.22'
+    implementation 'org.gitlab4j:gitlab4j-api:4.14.24'
 
     // TODO: at the moment we cannot upgrade to a higher version of acli due to conflicts with the used LoggerFactory
     // the problem is that newer versions integrate the logging framework directly into the jar file instead of referencing
@@ -187,7 +172,7 @@ dependencies {
     implementation "org.imsglobal:basiclti-util:1.2.0"
     implementation "org.jasypt:jasypt:1.9.3"
     implementation "me.xdrop:fuzzywuzzy:1.2.0"
-    implementation "com.atlassian.bamboo:bamboo-specs:6.10.3"
+    implementation "com.atlassian.bamboo:bamboo-specs:7.0.2"
     implementation "com.thoughtworks.qdox:qdox:2.0.0"
     implementation "io.sentry:sentry-spring:1.7.30"
     implementation "io.sentry:sentry-logback:1.7.30"
@@ -197,7 +182,7 @@ dependencies {
 
     implementation "io.github.jhipster:jhipster-framework"
     implementation "org.springframework.boot:spring-boot-starter-cache:${spring_boot_version}"
-    implementation "io.micrometer:micrometer-registry-prometheus:1.4.0"
+    implementation "io.micrometer:micrometer-registry-prometheus:1.4.1"
     implementation "net.logstash.logback:logstash-logback-encoder:6.3"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-hppc:2.10.3"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.3"
@@ -208,7 +193,7 @@ dependencies {
     implementation "javax.cache:cache-api:1.1.1"
     implementation "org.hibernate:hibernate-core"
     implementation "com.zaxxer:HikariCP:3.4.2"
-    implementation "org.apache.commons:commons-lang3:3.9"
+    implementation "org.apache.commons:commons-lang3:3.10"
     implementation "org.apache.commons:commons-text:1.8"
     implementation "commons-io:commons-io"
     implementation "javax.transaction:javax.transaction-api:1.3"
@@ -232,7 +217,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-thymeleaf:${spring_boot_version}"
 
     implementation "org.springframework.ldap:spring-ldap-core"
-    implementation "org.springframework.data:spring-data-ldap:2.2.5.RELEASE"
+    implementation "org.springframework.data:spring-data-ldap:2.2.6.RELEASE"
 
     implementation "org.springframework.security:spring-security-config:${spring_security_version}"
     implementation "org.springframework.security:spring-security-data:${spring_security_version}"
@@ -326,7 +311,7 @@ tasks.withType(Test) {
 }
 
 wrapper {
-    gradleVersion = "6.2.2"
+    gradleVersion = "6.3"
 }
 
 task stage(dependsOn: "bootWar") {
@@ -350,7 +335,7 @@ gitProperties {
 checkstyle {
     toolVersion "8.10"
     configFile file("checkstyle.xml")
-    checkstyleTest.enabled = true
+    checkstyleTest.enabled = false
     maxErrors = 0
 }
 
@@ -359,7 +344,7 @@ task executeCheckstyle (type: Exec) {
 }
 
 task buildJarForDocker (type: Exec) {
-    commandLine "./gradlew", "build", "-x", "webpack", "-x", "test", "-x", "checkstyleTest", "-x", "spotbugsMain" // TODO sleiss: Check if checkstyleTest, spotbugsMain should be re-enabled
+    commandLine "./gradlew", "build", "-x", "webpack", "-x", "test", "-x", "jacocoTestCoverageVerification"
 }
 
 // Available commands:

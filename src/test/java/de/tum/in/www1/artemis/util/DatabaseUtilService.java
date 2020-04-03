@@ -263,14 +263,14 @@ public class DatabaseUtilService {
         return users;
     }
 
-    public List<Team> addTeamsForExercise(Exercise exercise, int numberOfTeams) {
-        List<Team> teams = ModelFactory.generateTeamsForExercise(exercise, numberOfTeams);
+    public List<Team> addTeamsForExercise(Exercise exercise, int numberOfTeams, User owner) {
+        List<Team> teams = ModelFactory.generateTeamsForExercise(exercise, numberOfTeams, owner);
         userRepo.saveAll(teams.stream().map(Team::getStudents).flatMap(Collection::stream).collect(Collectors.toList()));
         return teamRepo.saveAll(teams);
     }
 
-    public Team addTeamForExercise(Exercise exercise) {
-        return addTeamsForExercise(exercise, 1).get(0);
+    public Team addTeamForExercise(Exercise exercise, User owner) {
+        return addTeamsForExercise(exercise, 1, owner).get(0);
     }
 
     public Result addProgrammingParticipationWithResultForExercise(ProgrammingExercise exercise, String login) {
@@ -282,7 +282,7 @@ public class DatabaseUtilService {
             final var buildPlanId = exercise.getProjectKey().toUpperCase() + "-" + login.toUpperCase();
             final var repoName = (exercise.getProjectKey() + "-" + login).toLowerCase();
             participation.setInitializationDate(ZonedDateTime.now());
-            participation.setStudent(user);
+            participation.setParticipant(user);
             participation.setBuildPlanId(buildPlanId);
             participation.setProgrammingExercise(exercise);
             participation.setInitializationState(InitializationState.INITIALIZED);
@@ -489,7 +489,7 @@ public class DatabaseUtilService {
             User user = getUserByLogin(login);
             StudentParticipation participation = new StudentParticipation();
             participation.setInitializationDate(ZonedDateTime.now());
-            participation.setStudent(user);
+            participation.setParticipant(user);
             participation.setExercise(exercise);
             studentParticipationRepo.save(participation);
             storedParticipation = studentParticipationRepo.findByExerciseIdAndStudentLogin(exercise.getId(), login);
@@ -510,7 +510,7 @@ public class DatabaseUtilService {
         final var buildPlanId = exercise.getProjectKey().toUpperCase() + "-" + login.toUpperCase();
         final var repoName = (exercise.getProjectKey() + "-" + login).toLowerCase();
         participation.setInitializationDate(ZonedDateTime.now());
-        participation.setStudent(user);
+        participation.setParticipant(user);
         participation.setBuildPlanId(buildPlanId);
         participation.setProgrammingExercise(exercise);
         participation.setInitializationState(InitializationState.INITIALIZED);

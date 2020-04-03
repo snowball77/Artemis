@@ -1,8 +1,7 @@
 package de.tum.in.www1.artemis.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.data.util.Pair;
@@ -12,8 +11,10 @@ import de.tum.in.www1.artemis.domain.Course;
 import de.tum.in.www1.artemis.domain.Exercise;
 import de.tum.in.www1.artemis.domain.Team;
 import de.tum.in.www1.artemis.domain.User;
+import de.tum.in.www1.artemis.domain.participation.ProgrammingExerciseStudentParticipation;
 import de.tum.in.www1.artemis.repository.TeamRepository;
 import de.tum.in.www1.artemis.repository.UserRepository;
+import de.tum.in.www1.artemis.service.connectors.VersionControlService;
 import de.tum.in.www1.artemis.service.dto.TeamSearchUserDTO;
 import de.tum.in.www1.artemis.web.rest.errors.StudentsAlreadyAssignedException;
 
@@ -26,10 +27,40 @@ public class TeamService {
 
     private final AuthorizationCheckService authCheckService;
 
-    public TeamService(TeamRepository teamRepository, UserRepository userRepository, AuthorizationCheckService authCheckService) {
+    private final Optional<VersionControlService> versionControlService;
+
+    private final ProgrammingExerciseParticipationService programmingExerciseParticipationService;
+
+    public TeamService(TeamRepository teamRepository, UserRepository userRepository, AuthorizationCheckService authCheckService,
+            Optional<VersionControlService> versionControlService, ProgrammingExerciseParticipationService programmingExerciseParticipationService) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.authCheckService = authCheckService;
+        this.versionControlService = versionControlService;
+        this.programmingExerciseParticipationService = programmingExerciseParticipationService;
+    }
+
+    /**
+     * Finds the team of a given user for an exercise
+     * @param exercise Exercise for which to find the team
+     * @param user Student for which to find the team
+     * @return found team (or empty if student has not been assigned to a team yet for the exercise)
+     */
+    public Optional<Team> findOneByExerciseAndUser(Exercise exercise, User user) {
+        return teamRepository.findOneByExerciseIdAndUserId(exercise.getId(), user.getId());
+    }
+
+    /**
+     * Returns whether the student is already assigned to a team for a given exercise
+     * @param exercise Exercise for which to check
+     * @param user Student for which to check
+     * @return boolean flag whether the student has been assigned already or not yet
+     */
+    public Boolean isAssignedToTeam(Exercise exercise, User user) {
+        if (!exercise.isTeamMode()) {
+            return null;
+        }
+        return teamRepository.findOneByExerciseIdAndUserId(exercise.getId(), user.getId()).isPresent();
     }
 
     /**
@@ -41,11 +72,44 @@ public class TeamService {
      */
     public List<TeamSearchUserDTO> searchByLoginOrNameInCourseForExerciseTeam(Course course, Exercise exercise, String loginOrName) {
         List<User> users = userRepository.searchByLoginOrNameInGroup(course.getStudentGroupName(), loginOrName);
+        List<Long> userIds = users.stream().map(User::getId).collect(Collectors.toList());
         List<TeamSearchUserDTO> teamSearchUsers = users.stream().map(TeamSearchUserDTO::new).collect(Collectors.toList());
-        // Annotate whether the user is already assigned to a team for the given exercise
-        // TODO Martin Wauligmann: swap n+1 db queries with only 1 or 2 queries?
-        teamSearchUsers.forEach(user -> user.setIsAssignedToTeam(teamRepository.findOneByExerciseIdAndUserId(exercise.getId(), user.getId()).isPresent()));
+
+        // Get list of all students (with id of assigned team) that are already assigned to a team for the exercise
+        List<long[]> userIdAndTeamIdPairs = teamRepository.findAssignedUserIdsWithTeamIdsByExerciseIdAndUserIds(exercise.getId(), userIds);
+
+        // convert Set<[userId, teamId]> into Map<userId -> teamId>
+        Map<Long, Long> userIdAndTeamIdMap = userIdAndTeamIdPairs.stream().collect(Collectors.toMap(userIdAndTeamIdPair -> userIdAndTeamIdPair[0], // userId
+                userIdAndTeamIdPair -> userIdAndTeamIdPair[1] // teamId
+        ));
+
+        // Annotate to which team the user is already assigned to for the given exercise (null if not assigned)
+        teamSearchUsers.forEach(user -> user.setAssignedTeamId(userIdAndTeamIdMap.get(user.getId())));
+
         return teamSearchUsers;
+    }
+
+    /**
+     * Update the members of a team repository if a participation exists already. Users might need to be removed or added.
+     * @param exerciseId Id of the exercise to which the team belongs
+     * @param existingTeam Old team before update
+     * @param updatedTeam New team after update
+     */
+    public void updateRepositoryMembersIfNeeded(Long exerciseId, Team existingTeam, Team updatedTeam) {
+        Optional<ProgrammingExerciseStudentParticipation> optionalParticipation = this.programmingExerciseParticipationService.findByExerciseIdAndTeamId(exerciseId,
+                existingTeam.getId());
+
+        optionalParticipation.ifPresent(participation -> {
+            // Users in the existing team that are no longer in the updated team need to be removed
+            Set<User> usersToRemove = new HashSet<>(existingTeam.getStudents());
+            usersToRemove.removeAll(updatedTeam.getStudents());
+            usersToRemove.forEach(user -> versionControlService.get().removeMemberFromRepository(participation.getRepositoryUrlAsUrl(), user));
+
+            // Users in the updated team that were not yet part of the existing team need to be added
+            Set<User> usersToAdd = new HashSet<>(updatedTeam.getStudents());
+            usersToAdd.removeAll(existingTeam.getStudents());
+            usersToAdd.forEach(user -> versionControlService.get().addMemberToRepository(participation.getRepositoryUrlAsUrl(), user));
+        });
     }
 
     /**
@@ -59,6 +123,11 @@ public class TeamService {
         List<Pair<User, Team>> conflicts = findStudentTeamConflicts(exercise, team);
         if (!conflicts.isEmpty()) {
             throw new StudentsAlreadyAssignedException(conflicts);
+        }
+        // audit information is normally updated automatically but since changes in the many-to-many relationships are not registered,
+        // we need to trigger the audit explicitly by modifying a column of the team entity itself
+        if (team.getId() != null) {
+            team.setLastModifiedDate(Instant.now());
         }
         team.setExercise(exercise);
         return teamRepository.save(team);
