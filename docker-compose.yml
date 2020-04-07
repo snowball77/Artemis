@@ -9,7 +9,7 @@ services:
     command: sh -c "./gradlew buildJarForDocker"
     depends_on:
         - artemis-mysql
-    image: openjdk:12-jdk-alpine
+    image: openjdk:14-jdk-alpine
     volumes:
         - ./:/server/
     working_dir: /server
