@@ -29,4 +29,9 @@ public class KafkaTopicConfig {
     public NewTopic websocket() {
         return new NewTopic("websocket", 1, (short) 1);
     }
+
+    @Bean
+    public NewTopic hashmap() {
+        return new NewTopic("hashmap", 1, (short) 1);
+    }
 }
