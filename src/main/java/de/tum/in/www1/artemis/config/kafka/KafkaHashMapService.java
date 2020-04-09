@@ -12,6 +12,9 @@ public class KafkaHashMapService {
 
     private List<KafkaHashMap> kafkaHashMaps = new ArrayList<>();
 
+    @Value("${kafka.groupid}")
+    private final String groupId = "group1";
+
     /**
      * Registers a new HashMap
      * @param map the HashMap that should be supported
@@ -20,10 +23,7 @@ public class KafkaHashMapService {
         kafkaHashMaps.add(map);
     }
 
-    @Value("${artemis.user-management.ldap.base}")
-    private final String test = "ads";
-
-    @KafkaListener(topics = "hashmap", groupId = test)
+    @KafkaListener(topics = "hashmap", groupId = groupId)
     public void listen(String message) {
 
     }

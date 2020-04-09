@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "kafka")
 public class KafkaProperties {
 
-    private String bootStrapServers = "kafka:9092";
+    private String bootStrapServers = "localhost:9092";
 
     private Map<String, String> consumer = new HashMap<>();
 
