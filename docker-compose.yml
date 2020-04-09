@@ -15,7 +15,7 @@ services:
     working_dir: /server
 
   artemis-server:
-    command: sh -c "sleep 90 && java -jar build/libs/Artemis-*.jar"
+    command: sh -c "sleep 0 && CONTAINER_ID=$$(cat /proc/self/cgroup | grep 'docker' | sed s/\\\\//\\\\n/g | tail -1 | cut -c1-8) && SPRING_APPLICATION_JSON=\"{\\\"kafka\\\":{\\\"groupid\\\":\\\"$$CONTAINER_ID\\\"}}\" java -jar build/libs/Artemis-*.jar"
     depends_on:
       - artemis-mysql
     image: openjdk:14-jdk-alpine
@@ -78,4 +78,4 @@ services:
 
 networks:
   artemis:
-    driver: bridge
+    driver: "bridge"

@@ -3,7 +3,6 @@ package de.tum.in.www1.artemis.config.kafka;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +10,6 @@ import org.springframework.stereotype.Service;
 public class KafkaHashMapService {
 
     private List<KafkaHashMap> kafkaHashMaps = new ArrayList<>();
-
-    @Value("${kafka.groupid}")
-    private final String groupId = "group1";
 
     /**
      * Registers a new HashMap
@@ -23,7 +19,7 @@ public class KafkaHashMapService {
         kafkaHashMaps.add(map);
     }
 
-    @KafkaListener(topics = "hashmap", groupId = groupId)
+    @KafkaListener(topics = "hashmap", groupId = "${kafka.groupid}")
     public void listen(String message) {
 
     }
