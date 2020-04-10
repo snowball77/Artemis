@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
+import de.tum.in.www1.artemis.config.kafka.KafkaHashMap;
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
 import de.tum.in.www1.artemis.domain.enumeration.InitializationState;
@@ -36,22 +37,22 @@ public class QuizScheduleService {
     /**
      * quizExerciseId -> Map<username -> QuizSubmission>
      */
-    private static Map<Long, Map<String, QuizSubmission>> submissionHashMap = new ConcurrentHashMap<>();
+    private static Map<Long, Map<String, QuizSubmission>> submissionHashMap = new KafkaHashMap<>();
 
     /**
      * quizExerciseId -> Map<username -> StudentParticipation>
      */
-    private static Map<Long, Map<String, StudentParticipation>> participationHashMap = new ConcurrentHashMap<>();
+    private static Map<Long, Map<String, StudentParticipation>> participationHashMap = new KafkaHashMap<>();
 
     /**
      * quizExerciseId -> [Result]
      */
-    private static Map<Long, Set<Result>> resultHashMap = new ConcurrentHashMap<>();
+    private static Map<Long, Set<Result>> resultHashMap = new KafkaHashMap<>();
 
     /**
      * quizExerciseId -> ScheduledFuture
      */
-    private static Map<Long, ScheduledFuture> quizStartSchedules = new ConcurrentHashMap<>();
+    private static Map<Long, ScheduledFuture> quizStartSchedules = new KafkaHashMap<>();
 
     private static ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
     static {

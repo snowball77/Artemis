@@ -1,22 +1,24 @@
 package de.tum.in.www1.artemis.config.kafka;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class KafkaHashMap<K, V> implements Map<K, V> {
 
-    private HashMap<K, V> writeHashMap = new HashMap<>();
+    private Map<K, V> writeHashMap = new ConcurrentHashMap();
 
-    private HashMap<K, V> readHashMap = new HashMap<>();
+    private Map<K, V> readHashMap = new ConcurrentHashMap<>();
 
     private KafkaHashMapService kafkaHashMapService;
 
-    public KafkaHashMap(KafkaHashMapService kafkaHashMapService) {
+    @Autowired
+    public void setKafkaHashMapService(KafkaHashMapService kafkaHashMapService) {
         this.kafkaHashMapService = kafkaHashMapService;
     }
 
@@ -54,6 +56,7 @@ public class KafkaHashMap<K, V> implements Map<K, V> {
     public V put(K k, V v) {
         readHashMap.remove(k); // Remove from readHashMap as the new value is newer
         // TODO distribute to other hashmaps
+        kafkaHashMapService.putUpdate(this, k, v);
         return writeHashMap.put(k, v);
     }
 
