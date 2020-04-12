@@ -13,7 +13,7 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
-import de.tum.in.www1.artemis.config.kafka.KafkaHashMap;
+import de.tum.in.www1.artemis.config.kafka.KafkaHashMapService;
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
 import de.tum.in.www1.artemis.domain.enumeration.InitializationState;
@@ -36,22 +36,22 @@ public class QuizScheduleService {
     /**
      * quizExerciseId -> Map<username -> QuizSubmission>
      */
-    private static Map<Long, Map<String, QuizSubmission>> submissionHashMap = new KafkaHashMap<>();
+    private static Map<Long, Map<String, QuizSubmission>> submissionHashMap;
 
     /**
      * quizExerciseId -> Map<username -> StudentParticipation>
      */
-    private static Map<Long, Map<String, StudentParticipation>> participationHashMap = new KafkaHashMap<>();
+    private static Map<Long, Map<String, StudentParticipation>> participationHashMap;
 
     /**
      * quizExerciseId -> [Result]
      */
-    private static Map<Long, Set<Result>> resultHashMap = new KafkaHashMap<>();
+    private static Map<Long, Set<Result>> resultHashMap;
 
     /**
      * quizExerciseId -> ScheduledFuture
      */
-    private static Map<Long, ScheduledFuture<?>> quizStartSchedules = new KafkaHashMap<>();
+    private static Map<Long, ScheduledFuture<?>> quizStartSchedules;
 
     private static ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
     static {
@@ -77,7 +77,8 @@ public class QuizScheduleService {
     private final QuizStatisticService quizStatisticService;
 
     public QuizScheduleService(SimpMessageSendingOperations messagingTemplate, StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository,
-            QuizSubmissionRepository quizSubmissionRepository, UserService userService, QuizExerciseService quizExerciseService, QuizStatisticService quizStatisticService) {
+            QuizSubmissionRepository quizSubmissionRepository, UserService userService, QuizExerciseService quizExerciseService, QuizStatisticService quizStatisticService,
+            KafkaHashMapService kafkaHashMapService) {
         this.messagingTemplate = messagingTemplate;
         this.studentParticipationRepository = studentParticipationRepository;
         this.resultRepository = resultRepository;
@@ -85,6 +86,11 @@ public class QuizScheduleService {
         this.userService = userService;
         this.quizExerciseService = quizExerciseService;
         this.quizStatisticService = quizStatisticService;
+
+        QuizScheduleService.submissionHashMap = kafkaHashMapService.createKafkaHashMap("submission");
+        QuizScheduleService.participationHashMap = kafkaHashMapService.createKafkaHashMap("participation");
+        QuizScheduleService.resultHashMap = kafkaHashMapService.createKafkaHashMap("result");
+        QuizScheduleService.quizStartSchedules = kafkaHashMapService.createKafkaHashMap("quizStartSchedule");
     }
 
     @EventListener(ApplicationReadyEvent.class)

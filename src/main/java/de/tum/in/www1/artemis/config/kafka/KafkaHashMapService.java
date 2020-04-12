@@ -1,11 +1,10 @@
 package de.tum.in.www1.artemis.config.kafka;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -13,24 +12,35 @@ import org.springframework.stereotype.Service;
 @Service
 public class KafkaHashMapService {
 
-    private List<KafkaHashMap> kafkaHashMaps = new ArrayList<>();
+    private Map<String, KafkaHashMap> kafkaHashMaps = new HashMap<>();
 
-    @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
     private final Logger log = LoggerFactory.getLogger(KafkaHashMapService.class);
 
-    /**
-     * Registers a new HashMap
-     * @param map the HashMap that should be supported
-     */
-    public void registerHashMap(KafkaHashMap map) {
-        log.info("Registered HashMap " + map.toString());
-        kafkaHashMaps.add(map);
+    public KafkaHashMapService(KafkaTemplate<String, String> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void putUpdate(KafkaHashMap map, Object key, Object value) {
-        kafkaTemplate.send("hashmap", String.format("New value %s for key %s", value.toString(), key, toString()));
+    /**
+     * Registers a new HashMap
+     * @param hashMapId the id of the HashMap
+     * @param map the HashMap that should be supported
+     */
+    private void registerHashMap(String hashMapId, KafkaHashMap map) {
+        log.info("Registered HashMap " + map.toString());
+        kafkaHashMaps.put(hashMapId, map);
+    }
+
+    public <K, V> KafkaHashMap<K, V> createKafkaHashMap(String hashMapId) {
+        KafkaHashMap<K, V> kafkaHashMap = new KafkaHashMap<>(hashMapId, this);
+        registerHashMap(hashMapId, kafkaHashMap);
+        return kafkaHashMap;
+    }
+
+    public void putUpdate(String hashMapId, Object key, Object value) {
+        log.info(String.format("New value %s for key %s in HashMap %s", value.toString(), key.toString(), hashMapId));
+        kafkaTemplate.send("hashmap", String.format("New value %s for key %s in HashMap %s", value.toString(), key.toString(), hashMapId));
     }
 
     @KafkaListener(topics = "hashmap", groupId = "${kafka.groupid}")
