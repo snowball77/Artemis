@@ -38,7 +38,7 @@ public class KafkaHashMapService {
         return kafkaHashMap;
     }
 
-    public void putUpdate(String hashMapId, Object key, Object value) {
+    public <K, V> void putUpdate(String hashMapId, K key, V value) {
         log.info(String.format("New value %s for key %s in HashMap %s", value.toString(), key.toString(), hashMapId));
         kafkaTemplate.send("hashmap", String.format("New value %s for key %s in HashMap %s", value.toString(), key.toString(), hashMapId));
     }
