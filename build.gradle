@@ -239,6 +239,7 @@ dependencies {
     implementation "org.zalando:problem-spring-web:0.25.2"
     implementation "com.ibm.icu:icu4j:66.1"
     implementation "org.apache.kafka:kafka-clients"
+    implementation "org.apache.kafka:kafka-streams"
 
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct_version}"
     annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernate_version}"

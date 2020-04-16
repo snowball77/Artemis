@@ -6,10 +6,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.support.serializer.JsonSerializer;
+
+import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 
 public class KafkaHashMap<K, V> implements Map<K, V> {
 
@@ -26,6 +35,16 @@ public class KafkaHashMap<K, V> implements Map<K, V> {
     public KafkaHashMap(String hashMapId, KafkaHashMapService kafkaHashMapService) {
         this.hashMapId = hashMapId;
         this.kafkaHashMapService = kafkaHashMapService;
+    }
+
+    private KafkaStreams processStreams(final String bootstrapServers, final String stateDir) {
+        final StreamsBuilder builder = new StreamsBuilder();
+
+        final KStream<String, QuizExercise> quizzes = builder.stream("Quizzes", Consumed.with(Serdes.String(), Serdes.serdeFrom(QuizExercise.class)));
+        Serializer<QuizExercise> quizExerciseSerializer = new JsonSerializer<>();
+        quizExerciseSerializer.serialize("Quizzes", null);
+        quizExerciseSerializer.quizzes.process();
+        builder.build();
     }
 
     @Override
