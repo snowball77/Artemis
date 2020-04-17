@@ -84,9 +84,7 @@
             </div>
             <div
                 class="col-auto"
-                *ngIf="
-                    isAtLeastTutorInCourse || (approvedQuestionAnswer.author.id === user.id && (!selectedQuestionAnswer || selectedQuestionAnswer.id !== approvedQuestionAnswer.id))
-                "
+                *ngIf="isAtLeastTutorInCourse || (isAuthorOfAnswer(approvedQuestionAnswer) && (!selectedQuestionAnswer || selectedQuestionAnswer.id !== approvedQuestionAnswer.id))"
             >
                 <fa-icon
                     class="mr-1 clickable"
@@ -113,7 +111,7 @@
             </div>
         </div>
         <div
-            class="row mb-1"
+            class="row mb-1 clickable"
             *ngIf="approvedQuestionAnswers.length !== 0 && sortedQuestionAnswers.length !== 0 && !showOtherAnswers"
             (click)="showOtherAnswers = !showOtherAnswers"
         >
@@ -128,7 +126,7 @@
         </div>
         <div *ngIf="approvedQuestionAnswers.length === 0 || showOtherAnswers">
             <div *ngIf="approvedQuestionAnswers.length !== 0 && sortedQuestionAnswers.length !== 0 && showOtherAnswers">
-                <div class="row mb-1" (click)="showOtherAnswers = !showOtherAnswers">
+                <div class="row mb-1 clickable" (click)="showOtherAnswers = !showOtherAnswers">
                     <div class="col overflow-parent">
                         <div class="overflow-ellipsis question-subtitle">{{ 'artemisApp.courseOverview.exerciseDetails.faq.hideAnswers' | translate }}</div>
                     </div>
@@ -160,7 +158,7 @@
                 </div>
                 <div
                     class="col-auto"
-                    *ngIf="isAtLeastTutorInCourse || (questionAnswer.author.id === user.id && (!selectedQuestionAnswer || selectedQuestionAnswer.id !== questionAnswer.id))"
+                    *ngIf="isAtLeastTutorInCourse || (isAuthorOfAnswer(questionAnswer) && (!selectedQuestionAnswer || selectedQuestionAnswer.id !== questionAnswer.id))"
                 >
                     <fa-icon
                         class="mr-1 clickable"
@@ -194,7 +192,7 @@
         </div>
         <div class="row mb-3" *ngIf="!isAnswerMode">
             <div class="col">
-                <button class="btn btn-primary" (click)="toggleAnswerMode(null)">{{ 'artemisApp.courseOverview.exerciseDetails.faq.answerNow' | translate }}</button>
+                <button class="btn btn-primary" (click)="toggleAnswerModeForNewAnswer()">{{ 'artemisApp.courseOverview.exerciseDetails.faq.answerNow' | translate }}</button>
             </div>
         </div>
         <div *ngIf="isAnswerMode && !selectedQuestionAnswer">

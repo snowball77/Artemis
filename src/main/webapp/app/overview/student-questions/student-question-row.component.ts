@@ -30,7 +30,7 @@ export class StudentQuestionRowComponent implements OnInit, OnDestroy {
     isExpanded = true;
     isAnswerMode: boolean;
     isEditMode: boolean;
-    isQuestionAuthor: boolean;
+    isQuestionAuthor = false;
     showOtherAnswers = false;
     selectedQuestionAnswer: StudentQuestionAnswer | null;
     questionAnswerText: string | null;
@@ -81,10 +81,36 @@ export class StudentQuestionRowComponent implements OnInit, OnDestroy {
         this.isEditMode = !this.isEditMode;
     }
 
+    /**
+     * Takes a studentQuestionAnswer and toggles the edit field for it
+     * If a studentQuestionAnswer is already selected it closes the edit field for the old one and opens it for the new one
+     * @param   {StudentQuestionAnswer} questionAnswer
+     */
     toggleAnswerMode(questionAnswer: StudentQuestionAnswer | null): void {
-        this.isAnswerMode = !this.isAnswerMode;
-        this.questionAnswerText = questionAnswer ? questionAnswer.answerText : '';
-        this.selectedQuestionAnswer = questionAnswer;
+        if (questionAnswer) {
+            if (this.selectedQuestionAnswer && questionAnswer.id === this.selectedQuestionAnswer.id) {
+                this.isAnswerMode = false;
+                this.questionAnswerText = '';
+                this.selectedQuestionAnswer = null;
+            } else {
+                this.isAnswerMode = true;
+                this.questionAnswerText = questionAnswer.answerText;
+                this.selectedQuestionAnswer = questionAnswer;
+            }
+        } else {
+            this.isAnswerMode = false;
+            this.questionAnswerText = '';
+            this.selectedQuestionAnswer = questionAnswer;
+        }
+    }
+
+    /**
+     * Toggles the field for a new Answer
+     */
+    toggleAnswerModeForNewAnswer(): void {
+        this.isAnswerMode = true;
+        this.questionAnswerText = '';
+        this.selectedQuestionAnswer = null;
     }
 
     /**
@@ -164,5 +190,18 @@ export class StudentQuestionRowComponent implements OnInit, OnDestroy {
         this.studentQuestionAnswerService.update(studentAnswer).subscribe((studentAnswerResponse: HttpResponse<StudentQuestionAnswer>) => {
             this.sortQuestionAnswers();
         });
+    }
+
+    /**
+     * Takes a studentQuestionAnswer and determines if the user is the author of it
+     * @param {StudentQuestionAnswer} studentQuestionAnswer
+     * @returns {boolean}
+     */
+    isAuthorOfAnswer(studentQuestionAnswer: StudentQuestionAnswer): boolean {
+        if (this.user) {
+            return studentQuestionAnswer.author.id === this.user.id;
+        } else {
+            return false;
+        }
     }
 }
