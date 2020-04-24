@@ -1,4 +1,4 @@
-package de.tum.in.www1.artemis.kafka;
+package de.tum.in.www1.artemis.store;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
