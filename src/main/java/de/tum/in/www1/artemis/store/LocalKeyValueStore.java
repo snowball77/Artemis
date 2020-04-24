@@ -18,17 +18,17 @@ public class LocalKeyValueStore<K, V> extends KeyValueStore<K, V> {
     }
 
     @Override
-    V get(K key) {
+    public V get(K key) {
         return localStorage.get(key);
     }
 
     @Override
-    void put(K key, V value) {
+    public void put(K key, V value) {
         localStorage.put(key, value);
     }
 
     @Override
-    void delete(K key) {
+    public void delete(K key) {
         localStorage.remove(key);
     }
 }

@@ -15,17 +15,17 @@ public class KeyValueStoreProxy<K, V> extends KeyValueStore<K, V> {
     }
 
     @Override
-    V get(K key) {
+    public V get(K key) {
         return null;
     }
 
     @Override
-    void put(K key, V value) {
+    public void put(K key, V value) {
 
     }
 
     @Override
-    void delete(K key) {
+    public void delete(K key) {
 
     }
 }
