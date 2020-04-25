@@ -12,9 +12,9 @@ abstract class KeyValueStore<K, V> {
 
     protected String topic;
 
-    private Serde<K> keySerde;
+    protected Serde<K> keySerde;
 
-    private Serde<V> valueSerde;
+    protected Serde<V> valueSerde;
 
     KeyValueStore(String topic) {
         // Default Serdes are JSON Serdes

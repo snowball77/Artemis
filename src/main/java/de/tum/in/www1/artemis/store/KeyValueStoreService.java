@@ -1,6 +1,5 @@
 package de.tum.in.www1.artemis.store;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.kafka.common.serialization.Serde;
 import org.springframework.stereotype.Service;
 
@@ -14,23 +13,20 @@ public class KeyValueStoreService<K, V> {
 
     public KeyValueStoreProxy<K, V> createKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         if (kafkaConnected) {
-
+            return new KeyValueStoreProxy<>(new RemoteKeyValueStore<>(topic, keySerde, valueSerde));
         }
         else {
             return new KeyValueStoreProxy<>(new LocalKeyValueStore<>(topic, keySerde, valueSerde));
         }
-
-        throw new NotImplementedException("This KV-store is not yet implemented");
     }
 
     public KeyValueStoreProxy<K, V> createKeyValueStore(String topic) {
         if (kafkaConnected) {
-
+            return new KeyValueStoreProxy<>(new RemoteKeyValueStore<>(topic));
         }
         else {
             return new KeyValueStoreProxy<>(new LocalKeyValueStore<>(topic));
         }
 
-        throw new NotImplementedException("This KV-store is not yet implemented");
     }
 }
