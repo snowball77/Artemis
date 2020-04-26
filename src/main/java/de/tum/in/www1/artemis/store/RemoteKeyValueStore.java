@@ -96,9 +96,8 @@ class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
         final KafkaStreams streams = new KafkaStreams(topology, props);
         KafkaStreams.StateListener stateListener = (newState, oldState) -> {
-            if (newState.isRunningOrRebalancing()) {
-                StoreQueryParameters storeQueryParameters = StoreQueryParameters.fromNameAndType("store-" + topic, QueryableStoreTypes.keyValueStore());
-                readOnlyKeyValueStore = (ReadOnlyKeyValueStore<K, V>) streams.store(storeQueryParameters);
+            if (newState.isRunning()) {
+                readOnlyKeyValueStore = streams.store("store-" + topic, QueryableStoreTypes.keyValueStore());
             }
         };
         streams.setStateListener(stateListener);
