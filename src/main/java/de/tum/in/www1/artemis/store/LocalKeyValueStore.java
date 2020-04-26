@@ -1,14 +1,14 @@
 package de.tum.in.www1.artemis.store;
 
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.kafka.common.serialization.Serde;
 
 import com.google.common.collect.ImmutableMap;
 
-class LocalKeyValueStore<K, V> extends KeyValueStore<K, V> {
+class LocalKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
     private Map<K, V> localStorage = new ConcurrentHashMap<>();
 
@@ -21,17 +21,17 @@ class LocalKeyValueStore<K, V> extends KeyValueStore<K, V> {
     }
 
     @Override
-    V get(K key) {
+    public V get(K key) {
         return localStorage.get(key);
     }
 
     @Override
-    void put(K key, V value) {
+    public void put(K key, V value) {
         localStorage.put(key, value);
     }
 
     @Override
-    void delete(K key) {
+    public void delete(K key) {
         localStorage.remove(key);
     }
 
@@ -41,13 +41,12 @@ class LocalKeyValueStore<K, V> extends KeyValueStore<K, V> {
     }
 
     @Override
-    public Set<K> getResponsibleKeys() {
-        return localStorage.keySet();
+    public Iterator<K> iterator() {
+        return localStorage.keySet().iterator();
     }
 
     @Override
-    public ImmutableMap<K, V> getResponsibleKeyValues() {
-        // In the local key value store, the server is always responsible for the whole range
-        return getAll();
+    public void registerKey(K key) {
+        // Nothing to do here as all used keys are registered by default in the HashMap
     }
 }

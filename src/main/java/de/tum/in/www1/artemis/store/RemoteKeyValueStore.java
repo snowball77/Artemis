@@ -1,9 +1,6 @@
 package de.tum.in.www1.artemis.store;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -21,21 +18,26 @@ import org.apache.kafka.streams.state.Stores;
 
 import com.google.common.collect.ImmutableMap;
 
-class RemoteKeyValueStore<K, V> extends KeyValueStore<K, V> {
+class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
-    ReadOnlyKeyValueStore<K, V> readOnlyKeyValueStore;
+    private ReadOnlyKeyValueStore<K, V> readOnlyKeyValueStore;
 
-    Producer<K, V> producer;
+    private Producer<K, V> producer;
+
+    private Producer<K, K> registerProducer;
 
     RemoteKeyValueStore(String topic) {
         super(topic);
         setupGlobalStore();
+        setUpProducer();
+        setUpRegisterProducer();
     }
 
     RemoteKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         super(topic, keySerde, valueSerde);
         setupGlobalStore();
         setUpProducer();
+        setUpRegisterProducer();
     }
 
     private void setupGlobalStore() {
@@ -71,11 +73,31 @@ class RemoteKeyValueStore<K, V> extends KeyValueStore<K, V> {
                     }
                 });
 
+        topology.addSource("Source", topic).addProcessor("store-" + topic + "-local-processor", () -> new Processor() {
+
+            org.apache.kafka.streams.state.KeyValueStore keyValueStore;
+
+            @Override
+            public void init(ProcessorContext processorContext) {
+                keyValueStore = (org.apache.kafka.streams.state.KeyValueStore) processorContext.getStateStore("store-" + topic + "-local");
+            }
+
+            @Override
+            public void process(Object key, Object value) {
+                System.out.printf("Old value: %s%n", keyValueStore.get(key));
+                System.out.printf("Storing %s: %s%n", key, value);
+                keyValueStore.put(key, value);
+            }
+
+            @Override
+            public void close() {
+            }
+        }).addStateStore(Stores.keyValueStoreBuilder(Stores.inMemoryKeyValueStore("store-" + topic + "-local"), this.keySerde, this.valueSerde).withLoggingDisabled());
+
         final KafkaStreams streams = new KafkaStreams(topology, props);
         KafkaStreams.StateListener stateListener = (newState, oldState) -> {
             if (newState.isRunningOrRebalancing()) {
                 StoreQueryParameters storeQueryParameters = StoreQueryParameters.fromNameAndType("store-" + topic, QueryableStoreTypes.keyValueStore());
-
                 readOnlyKeyValueStore = (ReadOnlyKeyValueStore<K, V>) streams.store(storeQueryParameters);
             }
         };
@@ -92,23 +114,37 @@ class RemoteKeyValueStore<K, V> extends KeyValueStore<K, V> {
         producer = new KafkaProducer<>(props);
     }
 
+    private void setUpRegisterProducer() {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");    // assuming that the Kafka broker this application is talking to runs on local machine with port
+                                                                                 // 9092
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerde.serializer().getClass());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, keySerde.serializer().getClass());
+        registerProducer = new KafkaProducer<>(props);
+    }
+
     private void writeToTopic(K key, V value) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, key, value);
         producer.send(producerRecord);
     }
 
+    private void writeToRegisterTopic(K key) {
+        ProducerRecord<K, K> producerRecord = new ProducerRecord<>(topic, key, key);
+        registerProducer.send(producerRecord);
+    }
+
     @Override
-    V get(K key) {
+    public V get(K key) {
         return readOnlyKeyValueStore.get(key);
     }
 
     @Override
-    void put(K key, V value) {
+    public void put(K key, V value) {
         writeToTopic(key, value);
     }
 
     @Override
-    void delete(K key) {
+    public void delete(K key) {
         writeToTopic(key, null);
     }
 
@@ -120,7 +156,16 @@ class RemoteKeyValueStore<K, V> extends KeyValueStore<K, V> {
     }
 
     @Override
-    public Set<K> getResponsibleKeys() {
-        return null;
+    public Iterator<K> iterator() {
+        return new RemoteKeyValueStoreIterator<>(this);
+    }
+
+    @Override
+    public void registerKey(K key) {
+        writeToRegisterTopic(key);
+    }
+
+    String getIteratorTopic() {
+        return topic + "-iterator";
     }
 }
