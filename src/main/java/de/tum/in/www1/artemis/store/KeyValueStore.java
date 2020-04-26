@@ -36,13 +36,13 @@ public interface KeyValueStore<K, V> {
      *
      * @return the stored pairs
      */
-    abstract ImmutableMap<K, V> getAll();
+    ImmutableMap<K, V> getAll();
 
     /**
      * Iterate over all keys for which this store is responsible.
      * Can only be called once.
      */
-    abstract Iterator<K> iterator();
+    Iterator<K> iterator();
 
     /**
      * Return the topic this store uses to create the store.
@@ -56,5 +56,5 @@ public interface KeyValueStore<K, V> {
      *
      * @param key the key that should be registered
      */
-    public void registerKey(K key);
+    void registerKey(K key);
 }

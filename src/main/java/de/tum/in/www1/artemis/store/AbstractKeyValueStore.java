@@ -3,13 +3,13 @@ package de.tum.in.www1.artemis.store;
 import org.apache.kafka.common.serialization.Serde;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
-abstract class AbstractKeyValueStore<K, V> implements KeyValueStore<K, V> {
+public abstract class AbstractKeyValueStore<K, V> implements KeyValueStore<K, V> {
 
-    protected String topic;
+    String topic;
 
-    protected Serde<K> keySerde;
+    Serde<K> keySerde;
 
-    protected Serde<V> valueSerde;
+    Serde<V> valueSerde;
 
     AbstractKeyValueStore(String topic) {
         // Default Serdes are JSON Serdes
