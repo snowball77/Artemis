@@ -11,7 +11,7 @@ public class KeyValueStoreService<K, V> {
 
     private boolean kafkaConnected = false;
 
-    public KeyValueStoreProxy<K, V> createKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
+    public KeyValueStore<K, V> createKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         if (kafkaConnected) {
             return new KeyValueStoreProxy<>(new RemoteKeyValueStore<>(topic, keySerde, valueSerde));
         }
@@ -20,7 +20,7 @@ public class KeyValueStoreService<K, V> {
         }
     }
 
-    public KeyValueStoreProxy<K, V> createKeyValueStore(String topic) {
+    public KeyValueStore<K, V> createKeyValueStore(String topic) {
         if (kafkaConnected) {
             return new KeyValueStoreProxy<>(new RemoteKeyValueStore<>(topic));
         }
