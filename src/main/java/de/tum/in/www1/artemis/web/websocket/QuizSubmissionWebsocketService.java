@@ -31,10 +31,14 @@ public class QuizSubmissionWebsocketService {
 
     private final ParticipationService participationService;
 
+    private final QuizScheduleService quizScheduleService;
+
     private final SimpMessageSendingOperations messagingTemplate;
 
-    public QuizSubmissionWebsocketService(QuizExerciseService quizExerciseService, ParticipationService participationService, SimpMessageSendingOperations messagingTemplate) {
+    public QuizSubmissionWebsocketService(QuizExerciseService quizExerciseService, QuizScheduleService quizScheduleService, ParticipationService participationService,
+            SimpMessageSendingOperations messagingTemplate) {
         this.quizExerciseService = quizExerciseService;
+        this.quizScheduleService = quizScheduleService;
         this.participationService = participationService;
         this.messagingTemplate = messagingTemplate;
     }
@@ -91,7 +95,7 @@ public class QuizSubmissionWebsocketService {
         quizSubmission.setSubmissionDate(ZonedDateTime.now());
 
         // save submission to HashMap
-        QuizScheduleService.updateSubmission(exerciseId, username, quizSubmission);
+        quizScheduleService.updateSubmission(quizExercise.get(), username, quizSubmission);
 
         // send updated submission over websocket
         messagingTemplate.convertAndSendToUser(username, "/topic/quizExercise/" + exerciseId + "/submission", quizSubmission);

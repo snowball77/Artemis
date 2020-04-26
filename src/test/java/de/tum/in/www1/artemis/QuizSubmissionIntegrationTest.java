@@ -112,7 +112,7 @@ public class QuizSubmissionIntegrationTest extends AbstractSpringIntegrationBamb
         // before the quiz submissions are processed, none of them ends up in the database
         assertThat(quizSubmissionRepository.findAll().size()).isEqualTo(0);
 
-        quizScheduleService.processCachedQuizSubmissions();
+        quizScheduleService.processCachedQuizSubmissions(quizExercise.getId());
 
         // after the quiz submissions have been processed, all submission are saved to the database
         assertThat(quizSubmissionRepository.findAll().size()).isEqualTo(numberOfParticipants);
@@ -175,7 +175,7 @@ public class QuizSubmissionIntegrationTest extends AbstractSpringIntegrationBamb
         assertThat(participationRepository.findAll().size()).isEqualTo(numberOfParticipants);
 
         // processing the quiz submissions will update the statistics
-        quizScheduleService.processCachedQuizSubmissions();
+        quizScheduleService.processCachedQuizSubmissions(quizExercise.getId());
 
         // Test the statistics directly from the database
         QuizExercise quizExerciseWithStatistic = quizExerciseService.findOneWithQuestionsAndStatistics(quizExercise.getId());
@@ -311,7 +311,7 @@ public class QuizSubmissionIntegrationTest extends AbstractSpringIntegrationBamb
         // in the preview the submission will not be saved to the database
         assertThat(quizSubmissionRepository.findAll().size()).isEqualTo(0);
 
-        quizScheduleService.processCachedQuizSubmissions();
+        quizScheduleService.processCachedQuizSubmissions(quizExercise.getId());
 
         // all stats must be 0 because we have a preview here
         // Test the statistics directly from the database

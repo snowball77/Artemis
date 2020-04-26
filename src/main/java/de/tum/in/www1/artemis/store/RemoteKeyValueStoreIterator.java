@@ -31,7 +31,7 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
         this.remoteKeyValueStore = remoteKeyValueStore;
 
         Runnable consumerRunnable = () -> {
-            consumer = new KafkaConsumer<>((Properties) null);
+            consumer = new KafkaConsumer<>((Properties) null); // TODO: Simon Leiß: Fill properties
 
             while (true) {
                 ConsumerRecords<K, V> fetchedRecords = consumer.poll(Duration.ofMillis(100));

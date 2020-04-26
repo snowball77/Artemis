@@ -186,7 +186,7 @@ public class QuizExerciseSchedule {
         // TODO: Check if needed
     }
 
-    private void processCachedQuizSubmissions() {
+    public void processCachedQuizSubmissions() {
         log.debug("Process cached quiz submissions for quiz " + quizExercise.getId());
         try {
             long start = System.currentTimeMillis();

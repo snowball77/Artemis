@@ -77,12 +77,12 @@ public class QuizScheduleService {
     /**
      * add a quizSubmission to the submissionHashMap
      *
-     * @param quizExerciseId         the quizExerciseId of the quiz the submission belongs to (first Key)
-     * @param username       the username of the user, who submitted the submission (second Key)
-     * @param quizSubmission the quizSubmission, which should be added (Value)
+     * @param quizExercise   the quizExercise the submission belongs to
+     * @param username       the username of the user, who submitted the submission
+     * @param quizSubmission the quizSubmission, which should be added
      */
-    public static void updateSubmission(Long quizExerciseId, String username, QuizSubmission quizSubmission) {
-        QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
+    public void updateSubmission(QuizExercise quizExercise, String username, QuizSubmission quizSubmission) {
+        QuizExerciseSchedule quizExerciseSchedule = getOrCreateQuizExerciseSchedule(quizExercise);
         if (quizExerciseSchedule != null) {
             quizExerciseSchedule.updateSubmission(username, quizSubmission);
         }
@@ -203,6 +203,13 @@ public class QuizScheduleService {
         QuizExerciseSchedule quizExerciseSchedule = getOrCreateQuizExerciseSchedule(quizExercise);
         quizExerciseSchedule.scheduleQuizStart();
         quizExerciseSchedule.scheduleQuizEnd();
+    }
+
+    public void processCachedQuizSubmissions(long quizExerciseId) {
+        QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
+        if (quizExerciseSchedule != null) {
+            quizExerciseSchedule.processCachedQuizSubmissions();
+        }
     }
 
     /**
