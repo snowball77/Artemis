@@ -91,6 +91,7 @@ public class QuizExerciseSchedule {
     public void updateSubmission(String username, QuizSubmission quizSubmission) {
         if (username != null && quizSubmission != null) {
             submissionKeyValueStore.put(username, quizSubmission);
+            submissionKeyValueStore.registerKey(username); // TODO: Simon Leiß: Try to only insert key once
         }
     }
 
@@ -102,6 +103,7 @@ public class QuizExerciseSchedule {
     public void addParticipation(StudentParticipation participation) {
         if (participation != null) {
             participationKeyValueStore.put(participation.getParticipantIdentifier(), participation);
+            participationKeyValueStore.registerKey(participation.getParticipantIdentifier()); // Register key so that the iterator will return it
         }
     }
 
