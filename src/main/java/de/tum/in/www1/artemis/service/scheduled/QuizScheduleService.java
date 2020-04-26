@@ -66,6 +66,14 @@ public class QuizScheduleService {
         startSchedule(3 * 1000);                          // every 3 seconds
     }
 
+    private QuizExerciseSchedule getOrCreateQuizExerciseSchedule(QuizExercise quizExercise) {
+        if (!quizExerciseSchedules.containsKey(quizExercise.getId())) {
+            quizExerciseSchedules.put(quizExercise.getId(), new QuizExerciseSchedule(quizExercise, keyValueStoreService, messagingTemplate, quizExerciseService, userService,
+                    studentParticipationRepository, resultRepository, quizSubmissionRepository));
+        }
+        return quizExerciseSchedules.get(quizExercise.getId());
+    }
+
     /**
      * add a quizSubmission to the submissionHashMap
      *
@@ -126,7 +134,7 @@ public class QuizScheduleService {
         if (quizExerciseSchedule != null) {
             return quizExerciseSchedule.getQuizSubmission(username);
         }
-        return null;
+        return new QuizSubmission().submittedAnswers(new HashSet<>());
     }
 
     /**
@@ -159,11 +167,8 @@ public class QuizScheduleService {
             // schedule quiz start for all existing quizzes that are planned to start in the future
             List<QuizExercise> quizExercises = quizExerciseService.findAllPlannedToStartInTheFutureWithQuestions();
             for (QuizExercise quizExercise : quizExercises) {
-                if (!quizExerciseSchedules.containsKey(quizExercise.getId())) {
-                    quizExerciseSchedules.put(quizExercise.getId(), new QuizExerciseSchedule(quizExercise, keyValueStoreService, messagingTemplate, quizExerciseService,
-                            userService, studentParticipationRepository, resultRepository, quizSubmissionRepository));
-                }
-                QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExercise.getId());
+
+                QuizExerciseSchedule quizExerciseSchedule = getOrCreateQuizExerciseSchedule(quizExercise);
                 quizExerciseSchedule.scheduleQuizStart();
             }
         }
@@ -195,9 +200,9 @@ public class QuizScheduleService {
      * @param quizExercise that should be scheduled
      */
     public void scheduleQuizStart(final QuizExercise quizExercise) {
-        QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExercise.getId());
-        quizExerciseSchedule.cancelScheduledQuizStart();
+        QuizExerciseSchedule quizExerciseSchedule = getOrCreateQuizExerciseSchedule(quizExercise);
         quizExerciseSchedule.scheduleQuizStart();
+        quizExerciseSchedule.scheduleQuizEnd();
     }
 
     /**
@@ -207,7 +212,9 @@ public class QuizScheduleService {
      */
     public void cancelScheduledQuizStart(Long quizExerciseId) {
         QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
-        quizExerciseSchedule.cancelScheduledQuizStart();
+        if (quizExerciseSchedule != null) {
+            quizExerciseSchedule.cancelScheduledQuizStart();
+        }
     }
 
     public void clearAllQuizData() {
@@ -218,6 +225,8 @@ public class QuizScheduleService {
 
     public void clearQuizData(Long quizExerciseId) {
         QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
-        quizExerciseSchedule.clearQuizData();
+        if (quizExerciseSchedule != null) {
+            quizExerciseSchedule.clearQuizData();
+        }
     }
 }

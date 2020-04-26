@@ -43,7 +43,7 @@ public class QuizExerciseSchedule {
         threadPoolTaskScheduler.initialize();
     }
 
-    private final QuizExercise quizExercise;
+    private QuizExercise quizExercise;
 
     private KeyValueStore<String, QuizSubmission> submissionKeyValueStore;
 
@@ -80,7 +80,6 @@ public class QuizExerciseSchedule {
         participationKeyValueStore = keyValueStoreService.createKeyValueStore("participation-" + quizExercise.getId());
 
         scheduleQuizStart();
-        scheduleQuizEnd();
     }
 
     /**
@@ -141,10 +140,12 @@ public class QuizExerciseSchedule {
     }
 
     private void startQuiz() {
+        scheduleQuizEnd();
         quizExerciseService.sendQuizExerciseToSubscribedClients(quizExercise);
     }
 
     public void scheduleQuizStart() {
+        quizExercise = quizExerciseService.findOne(quizExercise.getId());
         // first remove and cancel old scheduledFuture if it exists
         cancelScheduledQuizStart();
 
@@ -162,10 +163,11 @@ public class QuizExerciseSchedule {
     }
 
     public void scheduleQuizEnd() {
+        quizExercise = quizExerciseService.findOne(quizExercise.getId());
         // first remove and cancel old scheduledFuture if it exists
         cancelScheduledQuizEnd();
 
-        if (quizExercise.getDueDate().isAfter(ZonedDateTime.now())) {
+        if (quizExercise.getDueDate() != null && quizExercise.getDueDate().isAfter(ZonedDateTime.now())) {
             // schedule processing cached quiz submissions when quiz ends
             this.quizEndSchedule = threadPoolTaskScheduler.schedule(this::processCachedQuizSubmissions, Date.from(quizExercise.getDueDate().toInstant()));
         }
@@ -191,9 +193,9 @@ public class QuizExerciseSchedule {
              * SUBMISSIONS
              */
             // TODO: Check if this makes sense/works
-            QuizExercise loadedQuizExercise = quizExerciseService.findOneWithQuestions(quizExercise.getId());
+            quizExercise = quizExerciseService.findOneWithQuestions(quizExercise.getId());
             // check if quiz has been deleted
-            if (loadedQuizExercise == null) {
+            if (quizExercise == null) {
                 // TODO: Delete submissions
                 // continue
             }
