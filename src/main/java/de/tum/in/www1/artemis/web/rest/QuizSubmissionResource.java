@@ -3,6 +3,7 @@ package de.tum.in.www1.artemis.web.rest;
 import static de.tum.in.www1.artemis.web.rest.util.ResponseUtil.forbidden;
 
 import java.time.ZonedDateTime;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,16 +41,19 @@ public class QuizSubmissionResource {
 
     private final QuizSubmissionService quizSubmissionService;
 
+    private final QuizStatisticService quizStatisticService;
+
     private final ParticipationService participationService;
 
     private final WebsocketMessagingService messagingService;
 
     private final AuthorizationCheckService authCheckService;
 
-    public QuizSubmissionResource(QuizExerciseService quizExerciseService, QuizSubmissionService quizSubmissionService, ParticipationService participationService,
-            WebsocketMessagingService messagingService, UserService userService, AuthorizationCheckService authCheckService) {
+    public QuizSubmissionResource(QuizExerciseService quizExerciseService, QuizSubmissionService quizSubmissionService, QuizStatisticService quizStatisticService,
+            ParticipationService participationService, WebsocketMessagingService messagingService, UserService userService, AuthorizationCheckService authCheckService) {
         this.quizExerciseService = quizExerciseService;
         this.quizSubmissionService = quizSubmissionService;
+        this.quizStatisticService = quizStatisticService;
         this.participationService = participationService;
         this.messagingService = messagingService;
         this.userService = userService;
@@ -78,7 +82,7 @@ public class QuizSubmissionResource {
                     .headers(HeaderUtil.createFailureAlert(applicationName, true, ENTITY_NAME, "idexists", "A new quizSubmission cannot already have an ID.")).body(null);
         }
 
-        QuizExercise quizExercise = quizExerciseService.findOneWithQuestions(exerciseId);
+        QuizExercise quizExercise = quizExerciseService.findOneWithQuestionsAndStatistics(exerciseId);
         if (quizExercise == null) {
             return ResponseEntity.badRequest()
                     .headers(HeaderUtil.createFailureAlert(applicationName, true, "submission", "exerciseNotFound", "No exercise was found for the given ID.")).body(null);
@@ -101,6 +105,7 @@ public class QuizSubmissionResource {
 
         // update and save submission
         Result result = quizSubmissionService.submitForPractice(quizSubmission, quizExercise, participation);
+        quizStatisticService.updateStatistics(Set.of(result), quizExercise);
 
         // remove some redundant or unnecessary data that is not needed on client side
         for (SubmittedAnswer answer : quizSubmission.getSubmittedAnswers()) {

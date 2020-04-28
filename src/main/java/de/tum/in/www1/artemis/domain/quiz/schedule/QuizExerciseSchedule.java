@@ -22,6 +22,7 @@ import de.tum.in.www1.artemis.repository.QuizSubmissionRepository;
 import de.tum.in.www1.artemis.repository.ResultRepository;
 import de.tum.in.www1.artemis.repository.StudentParticipationRepository;
 import de.tum.in.www1.artemis.service.QuizExerciseService;
+import de.tum.in.www1.artemis.service.QuizStatisticService;
 import de.tum.in.www1.artemis.service.UserService;
 import de.tum.in.www1.artemis.store.KeyValueStore;
 import de.tum.in.www1.artemis.store.KeyValueStoreService;
@@ -49,6 +50,8 @@ public class QuizExerciseSchedule {
 
     private KeyValueStore<String, StudentParticipation> participationKeyValueStore;
 
+    private Set<Result> results = new HashSet<>(); // TODO: Simon Leiß: Check if this must be synchronized
+
     private final SimpMessageSendingOperations messagingTemplate;
 
     private ScheduledFuture quizStartSchedule;
@@ -59,6 +62,8 @@ public class QuizExerciseSchedule {
 
     private UserService userService;
 
+    private final QuizStatisticService quizStatisticService;
+
     private StudentParticipationRepository studentParticipationRepository;
 
     private ResultRepository resultRepository;
@@ -66,12 +71,13 @@ public class QuizExerciseSchedule {
     private QuizSubmissionRepository quizSubmissionRepository;
 
     public QuizExerciseSchedule(QuizExercise quizExercise, KeyValueStoreService keyValueStoreService, SimpMessageSendingOperations messagingTemplate,
-            QuizExerciseService quizExerciseService, UserService userService, StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository,
-            QuizSubmissionRepository quizSubmissionRepository) {
+            QuizExerciseService quizExerciseService, UserService userService, QuizStatisticService quizStatisticService,
+            StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository, QuizSubmissionRepository quizSubmissionRepository) {
         this.quizExercise = quizExercise;
         this.messagingTemplate = messagingTemplate;
         this.quizExerciseService = quizExerciseService;
         this.userService = userService;
+        this.quizStatisticService = quizStatisticService;
         this.studentParticipationRepository = studentParticipationRepository;
         this.resultRepository = resultRepository;
         this.quizSubmissionRepository = quizSubmissionRepository;
@@ -176,7 +182,7 @@ public class QuizExerciseSchedule {
     }
 
     private void cancelScheduledQuizEnd() {
-        if (quizStartSchedule != null) {
+        if (quizEndSchedule != null) {
             boolean cancelSuccess = quizEndSchedule.cancel(true);
             log.info("Stop scheduled quiz start for quiz " + quizExercise.getId() + " was successful: " + cancelSuccess);
         }
@@ -200,6 +206,7 @@ public class QuizExerciseSchedule {
             if (quizExercise == null) {
                 // TODO: Delete submissions
                 // continue
+                return;
             }
 
             if (quizExercise.isEnded()) {
@@ -244,6 +251,9 @@ public class QuizExerciseSchedule {
                 if (counter > 0) {
                     log.info("Sent out {} participations after {} ms for quiz {}", counter, System.currentTimeMillis() - start, quizWithoutQuestions.getTitle());
                 }
+
+                quizExercise = quizExerciseService.findOneWithQuestionsAndStatistics(quizExercise.getId());
+                quizStatisticService.updateStatistics(results, quizExercise);
             }
         }
         catch (Exception e) {
@@ -353,8 +363,12 @@ public class QuizExerciseSchedule {
             // add the participation to the participationHashMap for the send out at the end of the quiz
             addParticipation(participation);
             // add the result of the participation resultHashMap for the statistic-Update
-            // addResultForStatisticUpdate(quizExercise.getId(), result); // TODO: Check if this is still needed
+            addResultForStatisticUpdate(result);
         }
+    }
+
+    public void addResultForStatisticUpdate(Result result) {
+        results.add(result);
     }
 
 }

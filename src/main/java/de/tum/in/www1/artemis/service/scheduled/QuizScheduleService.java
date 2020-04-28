@@ -20,6 +20,7 @@ import de.tum.in.www1.artemis.repository.QuizSubmissionRepository;
 import de.tum.in.www1.artemis.repository.ResultRepository;
 import de.tum.in.www1.artemis.repository.StudentParticipationRepository;
 import de.tum.in.www1.artemis.service.QuizExerciseService;
+import de.tum.in.www1.artemis.service.QuizStatisticService;
 import de.tum.in.www1.artemis.service.UserService;
 import de.tum.in.www1.artemis.store.KeyValueStoreService;
 
@@ -45,17 +46,21 @@ public class QuizScheduleService {
 
     private final UserService userService;
 
+    private final QuizStatisticService quizStatisticService;
+
     private final QuizExerciseService quizExerciseService;
 
     private final KeyValueStoreService keyValueStoreService;
 
     public QuizScheduleService(SimpMessageSendingOperations messagingTemplate, StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository,
-            QuizSubmissionRepository quizSubmissionRepository, UserService userService, QuizExerciseService quizExerciseService, KeyValueStoreService keyValueStoreService) {
+            QuizSubmissionRepository quizSubmissionRepository, UserService userService, QuizStatisticService quizStatisticService, QuizExerciseService quizExerciseService,
+            KeyValueStoreService keyValueStoreService) {
         this.messagingTemplate = messagingTemplate;
         this.studentParticipationRepository = studentParticipationRepository;
         this.resultRepository = resultRepository;
         this.quizSubmissionRepository = quizSubmissionRepository;
         this.userService = userService;
+        this.quizStatisticService = quizStatisticService;
         this.quizExerciseService = quizExerciseService;
         this.keyValueStoreService = keyValueStoreService;
     }
@@ -69,7 +74,7 @@ public class QuizScheduleService {
     private QuizExerciseSchedule getOrCreateQuizExerciseSchedule(QuizExercise quizExercise) {
         if (!quizExerciseSchedules.containsKey(quizExercise.getId())) {
             quizExerciseSchedules.put(quizExercise.getId(), new QuizExerciseSchedule(quizExercise, keyValueStoreService, messagingTemplate, quizExerciseService, userService,
-                    studentParticipationRepository, resultRepository, quizSubmissionRepository));
+                    quizStatisticService, studentParticipationRepository, resultRepository, quizSubmissionRepository));
         }
         return quizExerciseSchedules.get(quizExercise.getId());
     }
@@ -92,20 +97,15 @@ public class QuizScheduleService {
      * add a result to resultHashMap for a statistic-update
      * this should only be invoked once, when the quiz was submitted
      *
-     * @param quizExerciseId the quizExerciseId of the quiz the result belongs to (first Key)
+     * @param quizExerciseId the quizExerciseId of the quiz the result belongs to
      * @param result the result, which should be added
      */
     public static void addResultForStatisticUpdate(Long quizExerciseId, Result result) {
         log.debug("add result for statistic update for quiz " + quizExerciseId + ": " + result);
         QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
         if (quizExerciseSchedule != null) {
-            // quizExerciseSchedule.add;
+            quizExerciseSchedule.addResultForStatisticUpdate(result);
         }
-        // TODO: Simon Leiß: Check if this is still needed
-        /*
-         * if (quizExerciseId != null && result != null) { // check if there is already a result with the same quiz if (!resultHashMap.containsKey(quizExerciseId)) {
-         * resultHashMap.put(quizExerciseId, new HashSet<>()); } resultHashMap.get(quizExerciseId).add(result); }
-         */
     }
 
     /**
@@ -208,6 +208,7 @@ public class QuizScheduleService {
     public void processCachedQuizSubmissions(long quizExerciseId) {
         QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
         if (quizExerciseSchedule != null) {
+            log.info("Processing cached quiz submissions");
             quizExerciseSchedule.processCachedQuizSubmissions();
         }
     }

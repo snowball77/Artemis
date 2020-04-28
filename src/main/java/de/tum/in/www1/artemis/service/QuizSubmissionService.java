@@ -15,7 +15,6 @@ import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.domain.quiz.QuizSubmission;
 import de.tum.in.www1.artemis.repository.QuizSubmissionRepository;
 import de.tum.in.www1.artemis.repository.ResultRepository;
-import de.tum.in.www1.artemis.service.scheduled.QuizScheduleService;
 
 @Service
 public class QuizSubmissionService {
@@ -80,7 +79,7 @@ public class QuizSubmissionService {
         result.setParticipation(participation);
 
         // add result to statistics
-        QuizScheduleService.addResultForStatisticUpdate(quizExercise.getId(), result);
+        // QuizScheduleService.addResultForStatisticUpdate(quizExercise.getId(), result); // TODO: Simon Leiß: Check if this is fine
         log.debug("submit practice quiz finished: " + quizSubmission);
         return result;
     }

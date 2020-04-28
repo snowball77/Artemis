@@ -112,6 +112,8 @@ public class QuizSubmissionIntegrationTest extends AbstractSpringIntegrationBamb
         // before the quiz submissions are processed, none of them ends up in the database
         assertThat(quizSubmissionRepository.findAll().size()).isEqualTo(0);
 
+        Thread.sleep(4000); // Wait for quiz to be over (2 seconds quiz + 2 seconds grace period)
+
         quizScheduleService.processCachedQuizSubmissions(quizExercise.getId());
 
         // after the quiz submissions have been processed, all submission are saved to the database
