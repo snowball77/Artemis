@@ -68,6 +68,7 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
 
     @Override
     public K next() {
+        // TODO: Simon Leiß: evaluate if there is a better approach
         while (consumer == null) {
             try {
                 Thread.sleep(10);
