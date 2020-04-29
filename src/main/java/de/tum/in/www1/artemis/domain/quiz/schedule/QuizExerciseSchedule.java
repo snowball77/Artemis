@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
+import de.tum.in.www1.artemis.config.Constants;
 import de.tum.in.www1.artemis.domain.Result;
 import de.tum.in.www1.artemis.domain.SubmittedAnswer;
 import de.tum.in.www1.artemis.domain.User;
@@ -82,8 +83,8 @@ public class QuizExerciseSchedule {
         this.resultRepository = resultRepository;
         this.quizSubmissionRepository = quizSubmissionRepository;
 
-        submissionKeyValueStore = keyValueStoreService.createKeyValueStore("quiz-" + quizExercise.getId());
-        participationKeyValueStore = keyValueStoreService.createKeyValueStore("participation-" + quizExercise.getId());
+        submissionKeyValueStore = keyValueStoreService.createKeyValueStore("quiz-" + quizExercise.getId(), String.class, QuizSubmission.class);
+        participationKeyValueStore = keyValueStoreService.createKeyValueStore("participation-" + quizExercise.getId(), String.class, StudentParticipation.class);
 
         scheduleQuizStart();
     }
@@ -177,7 +178,8 @@ public class QuizExerciseSchedule {
 
         if (quizExercise.getDueDate() != null && quizExercise.getDueDate().isAfter(ZonedDateTime.now())) {
             // schedule processing cached quiz submissions when quiz ends
-            this.quizEndSchedule = threadPoolTaskScheduler.schedule(this::processCachedQuizSubmissions, Date.from(quizExercise.getDueDate().toInstant()));
+            this.quizEndSchedule = threadPoolTaskScheduler.schedule(this::processCachedQuizSubmissions,
+                    Date.from(quizExercise.getDueDate().toInstant().plusSeconds(Constants.QUIZ_GRACE_PERIOD_IN_SECONDS)));
         }
     }
 

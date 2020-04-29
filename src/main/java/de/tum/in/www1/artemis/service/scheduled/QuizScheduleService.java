@@ -73,6 +73,7 @@ public class QuizScheduleService {
 
     private QuizExerciseSchedule getOrCreateQuizExerciseSchedule(QuizExercise quizExercise) {
         if (!quizExerciseSchedules.containsKey(quizExercise.getId())) {
+            log.info("Creating new scheduler for quiz " + quizExercise.getId());
             quizExerciseSchedules.put(quizExercise.getId(), new QuizExerciseSchedule(quizExercise, keyValueStoreService, messagingTemplate, quizExerciseService, userService,
                     quizStatisticService, studentParticipationRepository, resultRepository, quizSubmissionRepository));
         }

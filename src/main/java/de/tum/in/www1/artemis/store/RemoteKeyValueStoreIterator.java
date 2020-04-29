@@ -1,19 +1,17 @@
 package de.tum.in.www1.artemis.store;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
+
+    private static final Logger log = LoggerFactory.getLogger(RemoteKeyValueStoreIterator.class);
 
     private RemoteKeyValueStore remoteKeyValueStore;
 
@@ -25,13 +23,18 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
 
     private ConsumerRecord<K, V> lastReturnedConsumer = null; // The last item returned by next()
 
-    private String topic;
-
     RemoteKeyValueStoreIterator(RemoteKeyValueStore remoteKeyValueStore) {
         this.remoteKeyValueStore = remoteKeyValueStore;
 
         Runnable consumerRunnable = () -> {
-            consumer = new KafkaConsumer<>((Properties) null); // TODO: Simon Leiß: Fill properties
+            Properties props = new Properties();
+            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");    // assuming that the Kafka broker this application is talking to runs on local machine with
+                                                                                     // port 9092
+            props.put(ConsumerConfig.GROUP_ID_CONFIG, "group1"); // TODO: Make group id unique
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, remoteKeyValueStore.keySerde.deserializer().getClass());
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, remoteKeyValueStore.valueSerde.deserializer().getClass());
+            consumer = new KafkaConsumer<>(props);
+            consumer.subscribe(List.of(remoteKeyValueStore.getIteratorTopic()));
 
             while (true) {
                 ConsumerRecords<K, V> fetchedRecords = consumer.poll(Duration.ofMillis(100));
@@ -65,6 +68,14 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
 
     @Override
     public K next() {
+        while (consumer == null) {
+            try {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         if (queue.isEmpty()) {
             throw new NoSuchElementException();
         }

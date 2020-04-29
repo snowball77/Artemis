@@ -13,7 +13,7 @@ public abstract class AbstractKeyValueStore<K, V> implements KeyValueStore<K, V>
 
     AbstractKeyValueStore(String topic) {
         // Default Serdes are JSON Serdes
-        this(topic, new JsonSerde<K>(), new JsonSerde<V>());
+        this(topic, new JsonSerde<>(), new JsonSerde<>());
     }
 
     AbstractKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {

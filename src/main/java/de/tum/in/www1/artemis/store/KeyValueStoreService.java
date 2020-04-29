@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class KeyValueStoreService<K, V> {
 
-    private boolean kafkaConnected = false;
+    private boolean kafkaConnected = true;
 
     public KeyValueStore<K, V> createKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         if (kafkaConnected) {
@@ -20,9 +20,9 @@ public class KeyValueStoreService<K, V> {
         }
     }
 
-    public KeyValueStore<K, V> createKeyValueStore(String topic) {
+    public KeyValueStore<K, V> createKeyValueStore(String topic, Class<? super K> keyClassType, Class<? super V> valueClassType) {
         if (kafkaConnected) {
-            return new KeyValueStoreProxy<>(new RemoteKeyValueStore<>(topic));
+            return new KeyValueStoreProxy<>(new RemoteKeyValueStore<>(topic, keyClassType, valueClassType));
         }
         else {
             return new KeyValueStoreProxy<>(new LocalKeyValueStore<>(topic));
