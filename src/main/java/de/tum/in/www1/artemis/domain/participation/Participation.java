@@ -58,7 +58,7 @@ public abstract class Participation implements Serializable, ParticipationInterf
     // objects would cause more issues (Subclasses don't work properly for Proxy objects)
     // and the gain from fetching lazy here is minimal
     @ManyToOne
-    @JsonIgnoreProperties("studentParticipations")
+    @JsonIgnoreProperties({ "studentParticipations", "categories", "teams" }) // TODO: Simon Leiß: Check if this is fine
     @JsonView(QuizView.Before.class)
     protected Exercise exercise;
 

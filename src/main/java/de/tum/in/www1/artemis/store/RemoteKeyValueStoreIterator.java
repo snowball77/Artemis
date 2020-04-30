@@ -19,7 +19,11 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
 
     private ConcurrentLinkedQueue<ConsumerRecord<K, V>> queue = new ConcurrentLinkedQueue<>();
 
+    private ConcurrentLinkedQueue<ConsumerRecord<K, V>> commitQueue = new ConcurrentLinkedQueue<>();
+
     private Thread consumerThread;
+
+    private boolean hasReadStarted = false;
 
     private ConsumerRecord<K, V> lastReturnedConsumer = null; // The last item returned by next()
 
@@ -38,38 +42,70 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
 
             while (true) {
                 ConsumerRecords<K, V> fetchedRecords = consumer.poll(Duration.ofMillis(100));
-                if (fetchedRecords.isEmpty()) {
+                if (fetchedRecords.isEmpty() && hasReadStarted) {
+                    log.info("Fetched no records, ending polling");
                     break;
                 }
 
-                fetchedRecords.forEach(queue::offer);
+                fetchedRecords.forEach(this::addIfNotPresent);
+
+                while (!commitQueue.isEmpty()) {
+                    ConsumerRecord<K, V> commitRecord = commitQueue.poll();
+                    TopicPartition topicPartition = new TopicPartition(remoteKeyValueStore.getIteratorTopic(), commitRecord.partition());
+                    consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(commitRecord.offset() + 1)));
+                }
             }
+
+            while (!commitQueue.isEmpty()) {
+                ConsumerRecord<K, V> commitRecord = commitQueue.poll();
+                TopicPartition topicPartition = new TopicPartition(remoteKeyValueStore.getIteratorTopic(), commitRecord.partition());
+                consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(commitRecord.offset() + 1)));
+            }
+
+            consumer.close();
         };
 
         consumerThread = new Thread(consumerRunnable);
         consumerThread.start();
     }
 
+    private void addIfNotPresent(ConsumerRecord<K, V> consumerRecord) {
+        if (!queue.contains(consumerRecord)) {
+            queue.offer(consumerRecord);
+            log.info("Added fetched record " + consumerRecord + " to queue");
+        }
+    }
+
     @Override
     public boolean hasNext() {
+        hasReadStarted = true;
+
         // Commit last returned record
         if (lastReturnedConsumer != null) {
-            TopicPartition topicPartition = new TopicPartition(remoteKeyValueStore.getIteratorTopic(), lastReturnedConsumer.partition());
-            consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastReturnedConsumer.offset() + 1)));
+            commitQueue.offer(lastReturnedConsumer);
         }
 
-        if (consumerThread.isAlive() || !queue.isEmpty()) {
+        if (!queue.isEmpty()) {
             return true;
         }
 
-        consumer.close();
         return false;
     }
 
     @Override
     public K next() {
         // TODO: Simon Leiß: evaluate if there is a better approach
-        while (consumer == null) {
+        if (!queue.isEmpty()) {
+            lastReturnedConsumer = queue.poll();
+            return lastReturnedConsumer.key();
+        }
+
+        while (consumerThread.isAlive()) {
+            if (!queue.isEmpty()) {
+                lastReturnedConsumer = queue.poll();
+                return lastReturnedConsumer.key();
+            }
+            log.info("consumerThread is alive, sleeping");
             try {
                 Thread.sleep(10);
             }
@@ -77,11 +113,7 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
                 e.printStackTrace();
             }
         }
-        if (queue.isEmpty()) {
-            throw new NoSuchElementException();
-        }
 
-        lastReturnedConsumer = queue.poll();
-        return lastReturnedConsumer.key();
+        throw new NoSuchElementException();
     }
 }

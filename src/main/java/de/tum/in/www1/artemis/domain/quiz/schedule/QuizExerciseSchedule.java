@@ -6,7 +6,6 @@ import java.util.concurrent.ScheduledFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import de.tum.in.www1.artemis.config.Constants;
@@ -26,7 +25,8 @@ import de.tum.in.www1.artemis.service.QuizExerciseService;
 import de.tum.in.www1.artemis.service.QuizStatisticService;
 import de.tum.in.www1.artemis.service.UserService;
 import de.tum.in.www1.artemis.store.KeyValueStore;
-import de.tum.in.www1.artemis.store.KeyValueStoreService;
+import de.tum.in.www1.artemis.store.factories.KeyValueStoreFactory;
+import de.tum.in.www1.artemis.web.websocket.distributed.ArtemisMessagingTemplate;
 
 /**
  * This class is responsible for scheduling a specific quiz.
@@ -49,11 +49,9 @@ public class QuizExerciseSchedule {
 
     private KeyValueStore<String, QuizSubmission> submissionKeyValueStore;
 
-    private KeyValueStore<String, StudentParticipation> participationKeyValueStore;
-
     private Set<Result> results = new HashSet<>(); // TODO: Simon Leiß: Check if this must be synchronized
 
-    private final SimpMessageSendingOperations messagingTemplate;
+    private final ArtemisMessagingTemplate messagingTemplate;
 
     private ScheduledFuture quizStartSchedule;
 
@@ -71,7 +69,7 @@ public class QuizExerciseSchedule {
 
     private QuizSubmissionRepository quizSubmissionRepository;
 
-    public QuizExerciseSchedule(QuizExercise quizExercise, KeyValueStoreService keyValueStoreService, SimpMessageSendingOperations messagingTemplate,
+    public QuizExerciseSchedule(QuizExercise quizExercise, KeyValueStoreFactory keyValueStoreFactory, ArtemisMessagingTemplate messagingTemplate,
             QuizExerciseService quizExerciseService, UserService userService, QuizStatisticService quizStatisticService,
             StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository, QuizSubmissionRepository quizSubmissionRepository) {
         this.quizExercise = quizExercise;
@@ -83,8 +81,7 @@ public class QuizExerciseSchedule {
         this.resultRepository = resultRepository;
         this.quizSubmissionRepository = quizSubmissionRepository;
 
-        submissionKeyValueStore = keyValueStoreService.createKeyValueStore("quiz-" + quizExercise.getId(), String.class, QuizSubmission.class);
-        participationKeyValueStore = keyValueStoreService.createKeyValueStore("participation-" + quizExercise.getId(), String.class, StudentParticipation.class);
+        submissionKeyValueStore = keyValueStoreFactory.createKeyValueStore("quiz-" + quizExercise.getId(), String.class, QuizSubmission.class);
 
         scheduleQuizStart();
     }
@@ -97,8 +94,10 @@ public class QuizExerciseSchedule {
      */
     public void updateSubmission(String username, QuizSubmission quizSubmission) {
         if (username != null && quizSubmission != null) {
+            if (!submissionKeyValueStore.exists(username)) {
+                submissionKeyValueStore.registerKey(username);
+            }
             submissionKeyValueStore.put(username, quizSubmission);
-            submissionKeyValueStore.registerKey(username); // TODO: Simon Leiß: Try to only insert key once
         }
     }
 
@@ -108,10 +107,11 @@ public class QuizExerciseSchedule {
      * @param participation the participation that should be saved
      */
     public void addParticipation(StudentParticipation participation) {
-        if (participation != null) {
-            participationKeyValueStore.put(participation.getParticipantIdentifier(), participation);
-            participationKeyValueStore.registerKey(participation.getParticipantIdentifier()); // Register key so that the iterator will return it
-        }
+        // TODO: Simon Leiß: Check if this is needed
+        /*
+         * if (participation != null) { participationKeyValueStore.put(participation.getParticipantIdentifier(), participation);
+         * participationKeyValueStore.registerKey(participation.getParticipantIdentifier()); // Register key so that the iterator will return it }
+         */
     }
 
     /**
@@ -145,7 +145,8 @@ public class QuizExerciseSchedule {
             return null;
         }
 
-        return participationKeyValueStore.get(username);
+        return null; // TODO: Simon Leiß: Check if this is needed
+        // return participationKeyValueStore.get(username);
     }
 
     private void startQuiz() {
@@ -216,43 +217,6 @@ public class QuizExerciseSchedule {
                 if (num > 0) {
                     log.info("Processed {} submissions after {} ms in quiz {}", num, System.currentTimeMillis() - start, quizExercise.getTitle());
                 }
-            }
-
-            /*
-             * PARTICIPATIONS
-             */
-            // Send out Participations from ParticipationHashMap to each user if the quiz has ended
-
-            // get the Quiz without the statistics and questions from the database
-            Optional<QuizExercise> quizWithoutQuestionsOptional = quizExerciseService.findById(quizExercise.getId());
-
-            // check if quiz has been deleted
-            if (quizWithoutQuestionsOptional.isEmpty()) {
-                // TODO: Delete participations
-                return;
-            }
-            QuizExercise quizWithoutQuestions = quizWithoutQuestionsOptional.get();
-
-            // check if the quiz has ended
-            if (quizWithoutQuestions.isEnded()) {
-                // send the participation with containing result and quiz back to the users via websocket
-                // and remove the participation from the ParticipationHashMap
-                int counter = 0;
-
-                Iterator<String> participationIterator = participationKeyValueStore.iterator();
-                while (participationIterator.hasNext()) {
-                    String username = participationIterator.next();
-                    StudentParticipation participation = participationKeyValueStore.get(username);
-                    if (participation.getParticipant() == null || participation.getParticipantIdentifier() == null) {
-                        log.error("Participation is missing student (or student is missing username): {}", participation);
-                        continue;
-                    }
-                    sendQuizResultToUser(participation);
-                    counter++;
-                }
-                if (counter > 0) {
-                    log.info("Sent out {} participations after {} ms for quiz {}", counter, System.currentTimeMillis() - start, quizWithoutQuestions.getTitle());
-                }
 
                 quizExercise = quizExerciseService.findOneWithQuestionsAndStatistics(quizExercise.getId());
                 quizStatisticService.updateStatistics(results, quizExercise);
@@ -260,6 +224,7 @@ public class QuizExerciseSchedule {
         }
         catch (Exception e) {
             log.error("Exception in Quiz Schedule for quiz {}:\n{}", quizExercise.getId(), e.getMessage());
+            e.printStackTrace();
         }
 
     }
@@ -313,6 +278,7 @@ public class QuizExerciseSchedule {
             }
             catch (Exception e) {
                 log.error("Exception in createParticipations() for {} in quiz {}: \n{}", username, quizExercise.getId(), e.getMessage());
+                e.printStackTrace();
             }
         }
 
@@ -362,8 +328,9 @@ public class QuizExerciseSchedule {
             quizSubmissionRepository.save(quizSubmission);
             result = resultRepository.save(result);
 
+            sendQuizResultToUser(participation);
             // add the participation to the participationHashMap for the send out at the end of the quiz
-            addParticipation(participation);
+            // addParticipation(participation);
             // add the result of the participation resultHashMap for the statistic-Update
             addResultForStatisticUpdate(result);
         }

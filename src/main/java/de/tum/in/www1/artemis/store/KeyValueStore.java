@@ -31,6 +31,13 @@ public interface KeyValueStore<K, V> {
     void delete(K key);
 
     /**
+     * Returns whether the given key has a non-null value associated to it
+     *
+     * @param key the key that should be checked for existence
+     */
+    boolean exists(K key);
+
+    /**
      * Get all KeyValuePairs in the given storage
      * This map is immutable and can not be changed
      *

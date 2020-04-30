@@ -8,7 +8,7 @@ public class KeyValueStoreProxy<K, V> implements KeyValueStore<K, V> {
 
     private AbstractKeyValueStore<K, V> keyValueStore;
 
-    KeyValueStoreProxy(AbstractKeyValueStore<K, V> keyValueStore) {
+    public KeyValueStoreProxy(AbstractKeyValueStore<K, V> keyValueStore) {
         this.keyValueStore = keyValueStore;
     }
 
@@ -22,6 +22,11 @@ public class KeyValueStoreProxy<K, V> implements KeyValueStore<K, V> {
 
     public void delete(K key) {
         keyValueStore.delete(key);
+    }
+
+    @Override
+    public boolean exists(K key) {
+        return keyValueStore.exists(key);
     }
 
     public ImmutableMap<K, V> getAll() {

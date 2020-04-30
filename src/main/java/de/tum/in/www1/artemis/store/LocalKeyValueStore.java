@@ -8,15 +8,15 @@ import org.apache.kafka.common.serialization.Serde;
 
 import com.google.common.collect.ImmutableMap;
 
-class LocalKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
+public class LocalKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
     private Map<K, V> localStorage = new ConcurrentHashMap<>();
 
-    LocalKeyValueStore(String topic) {
+    public LocalKeyValueStore(String topic) {
         super(topic);
     }
 
-    LocalKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
+    public LocalKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         super(topic, keySerde, valueSerde);
     }
 
@@ -33,6 +33,11 @@ class LocalKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
     @Override
     public void delete(K key) {
         localStorage.remove(key);
+    }
+
+    @Override
+    public boolean exists(K key) {
+        return localStorage.containsKey(key);
     }
 
     @Override

@@ -19,7 +19,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import com.google.common.collect.ImmutableMap;
 
-class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
+public class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
     private ReadOnlyKeyValueStore<K, V> readOnlyKeyValueStore;
 
@@ -27,19 +27,25 @@ class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
     private Producer<K, K> registerProducer;
 
-    RemoteKeyValueStore(String topic, Class<? super K> keyClassType, Class<? super V> valueClassType) {
+    private RemoteKeyValueStoreIterator<K, V> remoteKeyValueStoreIterator;
+
+    public RemoteKeyValueStore(String topic, Class<? super K> keyClassType, Class<? super V> valueClassType) {
         super(topic);
 
         setupGlobalStore(keyClassType, valueClassType);
         setUpProducer();
         setUpRegisterProducer();
+
+        remoteKeyValueStoreIterator = new RemoteKeyValueStoreIterator<>(this);
     }
 
-    RemoteKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
+    public RemoteKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         super(topic, keySerde, valueSerde);
         setupGlobalStore(null, null);
         setUpProducer();
         setUpRegisterProducer();
+
+        remoteKeyValueStoreIterator = new RemoteKeyValueStoreIterator<>(this);
     }
 
     private void setupGlobalStore(Class<? super K> keyClassType, Class<? super V> valueClassType) {
@@ -157,6 +163,11 @@ class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
     }
 
     @Override
+    public boolean exists(K key) {
+        return get(key) != null;
+    }
+
+    @Override
     public ImmutableMap<K, V> getAll() {
         Map<K, V> tempMap = new HashMap<>();
         readOnlyKeyValueStore.all().forEachRemaining(k -> tempMap.put(k.key, k.value));
@@ -165,7 +176,7 @@ class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
     @Override
     public Iterator<K> iterator() {
-        return new RemoteKeyValueStoreIterator<>(this);
+        return remoteKeyValueStoreIterator;
     }
 
     @Override

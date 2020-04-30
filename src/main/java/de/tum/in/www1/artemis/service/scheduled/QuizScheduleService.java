@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +21,8 @@ import de.tum.in.www1.artemis.repository.StudentParticipationRepository;
 import de.tum.in.www1.artemis.service.QuizExerciseService;
 import de.tum.in.www1.artemis.service.QuizStatisticService;
 import de.tum.in.www1.artemis.service.UserService;
-import de.tum.in.www1.artemis.store.KeyValueStoreService;
+import de.tum.in.www1.artemis.store.factories.KeyValueStoreFactory;
+import de.tum.in.www1.artemis.web.websocket.distributed.ArtemisMessagingTemplate;
 
 @Service
 public class QuizScheduleService {
@@ -36,7 +36,7 @@ public class QuizScheduleService {
 
     private static ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
-    private final SimpMessageSendingOperations messagingTemplate;
+    private final ArtemisMessagingTemplate messagingTemplate;
 
     private final StudentParticipationRepository studentParticipationRepository;
 
@@ -50,11 +50,11 @@ public class QuizScheduleService {
 
     private final QuizExerciseService quizExerciseService;
 
-    private final KeyValueStoreService keyValueStoreService;
+    private final KeyValueStoreFactory keyValueStoreFactory;
 
-    public QuizScheduleService(SimpMessageSendingOperations messagingTemplate, StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository,
+    public QuizScheduleService(ArtemisMessagingTemplate messagingTemplate, StudentParticipationRepository studentParticipationRepository, ResultRepository resultRepository,
             QuizSubmissionRepository quizSubmissionRepository, UserService userService, QuizStatisticService quizStatisticService, QuizExerciseService quizExerciseService,
-            KeyValueStoreService keyValueStoreService) {
+            KeyValueStoreFactory keyValueStoreFactory) {
         this.messagingTemplate = messagingTemplate;
         this.studentParticipationRepository = studentParticipationRepository;
         this.resultRepository = resultRepository;
@@ -62,7 +62,7 @@ public class QuizScheduleService {
         this.userService = userService;
         this.quizStatisticService = quizStatisticService;
         this.quizExerciseService = quizExerciseService;
-        this.keyValueStoreService = keyValueStoreService;
+        this.keyValueStoreFactory = keyValueStoreFactory;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -74,7 +74,7 @@ public class QuizScheduleService {
     private QuizExerciseSchedule getOrCreateQuizExerciseSchedule(QuizExercise quizExercise) {
         if (!quizExerciseSchedules.containsKey(quizExercise.getId())) {
             log.info("Creating new scheduler for quiz " + quizExercise.getId());
-            quizExerciseSchedules.put(quizExercise.getId(), new QuizExerciseSchedule(quizExercise, keyValueStoreService, messagingTemplate, quizExerciseService, userService,
+            quizExerciseSchedules.put(quizExercise.getId(), new QuizExerciseSchedule(quizExercise, keyValueStoreFactory, messagingTemplate, quizExerciseService, userService,
                     quizStatisticService, studentParticipationRepository, resultRepository, quizSubmissionRepository));
         }
         return quizExerciseSchedules.get(quizExercise.getId());
