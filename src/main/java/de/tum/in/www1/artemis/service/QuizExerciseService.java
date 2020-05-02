@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +19,7 @@ import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.domain.quiz.*;
 import de.tum.in.www1.artemis.domain.view.QuizView;
 import de.tum.in.www1.artemis.repository.*;
+import de.tum.in.www1.artemis.web.websocket.distributed.ArtemisMessagingTemplate;
 
 @Service
 public class QuizExerciseService {
@@ -38,7 +38,7 @@ public class QuizExerciseService {
 
     private final QuizSubmissionRepository quizSubmissionRepository;
 
-    private final SimpMessageSendingOperations messagingTemplate;
+    private final ArtemisMessagingTemplate messagingTemplate;
 
     private final UserService userService;
 
@@ -46,7 +46,7 @@ public class QuizExerciseService {
 
     public QuizExerciseService(UserService userService, QuizExerciseRepository quizExerciseRepository, DragAndDropMappingRepository dragAndDropMappingRepository,
             ShortAnswerMappingRepository shortAnswerMappingRepository, AuthorizationCheckService authCheckService, ResultRepository resultRepository,
-            QuizSubmissionRepository quizSubmissionRepository, SimpMessageSendingOperations messagingTemplate,
+            QuizSubmissionRepository quizSubmissionRepository, ArtemisMessagingTemplate messagingTemplate,
             MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
         this.userService = userService;
         this.quizExerciseRepository = quizExerciseRepository;

@@ -5,9 +5,11 @@ import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 @ConfigurationProperties(prefix = "kafka")
+@Profile("kafka")
 public class KafkaProperties {
 
     private String bootStrapServers = "localhost:9092";

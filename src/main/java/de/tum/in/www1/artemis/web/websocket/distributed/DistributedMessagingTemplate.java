@@ -1,7 +1,9 @@
 package de.tum.in.www1.artemis.web.websocket.distributed;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.Message;
@@ -9,14 +11,14 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 
-import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.ConvertAndSendDestinationDTO;
-import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.ConvertAndSendToUserDTO;
-import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.DistributedWebsocketMessage;
-import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.SendDestinationDTO;
+import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.*;
 
 @Service
 @Profile("kafka")
+@KafkaListener(id = "distributedMessagingTemplate", topics = "websocket-synchronize")
 public class DistributedMessagingTemplate implements ArtemisMessagingTemplate {
+
+    private static final Logger log = LoggerFactory.getLogger(DistributedMessagingTemplate.class);
 
     private static final String WEBSOCKET_SYNCHRONIZE_TOPIC = "websocket-synchronize";
 
@@ -41,22 +43,23 @@ public class DistributedMessagingTemplate implements ArtemisMessagingTemplate {
         kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendDestinationDTO(destination, payload));
     }
 
-    @KafkaListener(topics = WEBSOCKET_SYNCHRONIZE_TOPIC)
-    public void listenConvertAndSendToUser(ConsumerRecord<String, DistributedWebsocketMessage> consumerRecord) {
-        DistributedWebsocketMessage distributedWebsocketMessage = consumerRecord.value();
-        if (distributedWebsocketMessage instanceof ConvertAndSendDestinationDTO) {
-            ConvertAndSendDestinationDTO convertAndSendDestinationDTO = (ConvertAndSendDestinationDTO) distributedWebsocketMessage;
-            websocketTemplate.convertAndSend(convertAndSendDestinationDTO.getDestination(), convertAndSendDestinationDTO.getPayload());
+    @KafkaHandler
+    public void listen(ConvertAndSendDestinationDTO convertAndSendDestinationDTO) {
+        websocketTemplate.convertAndSend(convertAndSendDestinationDTO.getDestination(), convertAndSendDestinationDTO.getPayload());
+    }
 
-        }
-        else if (distributedWebsocketMessage instanceof ConvertAndSendToUserDTO) {
-            ConvertAndSendToUserDTO convertAndSendToUserDTO = (ConvertAndSendToUserDTO) distributedWebsocketMessage;
-            websocketTemplate.convertAndSendToUser(convertAndSendToUserDTO.getUser(), convertAndSendToUserDTO.getDestination(), convertAndSendToUserDTO.getPayload());
+    @KafkaHandler
+    public void listen(ConvertAndSendToUserDTO convertAndSendToUserDTO) {
+        websocketTemplate.convertAndSendToUser(convertAndSendToUserDTO.getUser(), convertAndSendToUserDTO.getDestination(), convertAndSendToUserDTO.getPayload());
+    }
 
-        }
-        else if (distributedWebsocketMessage instanceof SendDestinationDTO) {
-            SendDestinationDTO sendDestinationDTO = (SendDestinationDTO) distributedWebsocketMessage;
-            websocketTemplate.send(sendDestinationDTO.getDestination(), sendDestinationDTO.getMessage());
-        }
+    @KafkaHandler
+    public void listen(SendDestinationDTO sendDestinationDTO) {
+        websocketTemplate.send(sendDestinationDTO.getDestination(), sendDestinationDTO.getMessage());
+    }
+
+    @KafkaHandler(isDefault = true)
+    public void listenDefault(Object object) {
+        log.error("Received unexpected message: " + object);
     }
 }

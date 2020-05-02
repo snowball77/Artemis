@@ -8,18 +8,22 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.messaging.Message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.DistributedWebsocketMessage;
 
 @EnableKafka
 @Configuration
+@Profile("kafka")
 public class KafkaConsumerConfig {
 
     private KafkaProperties kafkaProperties;
@@ -32,6 +36,8 @@ public class KafkaConsumerConfig {
     public KafkaConsumerConfig(KafkaProperties kafkaProperties, MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
         this.kafkaProperties = kafkaProperties;
         this.objectMapper = mappingJackson2HttpMessageConverter.getObjectMapper();
+
+        this.objectMapper.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Message.class).build());
     }
 
     @Bean
