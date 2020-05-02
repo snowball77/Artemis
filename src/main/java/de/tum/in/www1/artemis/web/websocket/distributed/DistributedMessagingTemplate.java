@@ -3,6 +3,7 @@ package de.tum.in.www1.artemis.web.websocket.distributed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -11,6 +12,8 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.*;
 
 @Service
@@ -26,21 +29,40 @@ public class DistributedMessagingTemplate implements ArtemisMessagingTemplate {
 
     private KafkaTemplate<String, DistributedWebsocketMessage> kafkaTemplate;
 
-    DistributedMessagingTemplate(SimpMessageSendingOperations websocketTemplate, KafkaTemplate<String, DistributedWebsocketMessage> distributedWebsocketMessageKafkaTemplate) {
+    private ObjectMapper objectMapper;
+
+    DistributedMessagingTemplate(SimpMessageSendingOperations websocketTemplate, KafkaTemplate<String, DistributedWebsocketMessage> distributedWebsocketMessageKafkaTemplate,
+            MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
         this.websocketTemplate = websocketTemplate;
         this.kafkaTemplate = distributedWebsocketMessageKafkaTemplate;
+        this.objectMapper = mappingJackson2HttpMessageConverter.getObjectMapper();
     }
 
     public void convertAndSendToUser(String user, String destination, Object payload) throws MessagingException {
-        kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendToUserDTO(user, destination, payload));
+        try {
+            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendToUserDTO(user, destination, objectMapper.writeValueAsString(payload)));
+        }
+        catch (JsonProcessingException e) {
+            log.error("Error while sending WebSocket message to Kafka", e);
+        }
     }
 
     public void send(String destination, Message<?> message) throws MessagingException {
-        kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new SendDestinationDTO(destination, message));
+        try {
+            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new SendDestinationDTO(destination, message, objectMapper.writeValueAsString(message.getPayload())));
+        }
+        catch (JsonProcessingException e) {
+            log.error("Error while sending WebSocket message to Kafka", e);
+        }
     }
 
     public void convertAndSend(String destination, Object payload) throws MessagingException {
-        kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendDestinationDTO(destination, payload));
+        try {
+            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendDestinationDTO(destination, objectMapper.writeValueAsString(payload)));
+        }
+        catch (JsonProcessingException e) {
+            log.error("Error while sending WebSocket message to Kafka", e);
+        }
     }
 
     @KafkaHandler

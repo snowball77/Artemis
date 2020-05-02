@@ -4,9 +4,11 @@ public class ConvertAndSendDestinationDTO extends DistributedWebsocketMessage {
 
     private String destination;
 
-    private Object payload;
+    // Needed for Jackson
+    private ConvertAndSendDestinationDTO() {
+    }
 
-    public ConvertAndSendDestinationDTO(String destination, Object payload) {
+    public ConvertAndSendDestinationDTO(String destination, String payload) {
         this.destination = destination;
         this.payload = payload;
     }
@@ -17,13 +19,5 @@ public class ConvertAndSendDestinationDTO extends DistributedWebsocketMessage {
 
     public void setDestination(String destination) {
         this.destination = destination;
-    }
-
-    public Object getPayload() {
-        return payload;
-    }
-
-    public void setPayload(Object payload) {
-        this.payload = payload;
     }
 }

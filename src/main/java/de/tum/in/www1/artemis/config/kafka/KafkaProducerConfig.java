@@ -15,10 +15,8 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
-import org.springframework.messaging.Message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.DistributedWebsocketMessage;
 
 @Configuration
@@ -32,9 +30,7 @@ public class KafkaProducerConfig {
 
     public KafkaProducerConfig(@Autowired KafkaProperties kafkaProperties, MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
         this.kafkaProperties = kafkaProperties;
-        this.objectMapper = mappingJackson2HttpMessageConverter.getObjectMapper();
-
-        this.objectMapper.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Message.class).build());
+        this.objectMapper = mappingJackson2HttpMessageConverter.getObjectMapper().copy();
     }
 
     @Bean

@@ -15,7 +15,6 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.messaging.Message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
@@ -35,9 +34,9 @@ public class KafkaConsumerConfig {
 
     public KafkaConsumerConfig(KafkaProperties kafkaProperties, MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
         this.kafkaProperties = kafkaProperties;
-        this.objectMapper = mappingJackson2HttpMessageConverter.getObjectMapper();
+        this.objectMapper = mappingJackson2HttpMessageConverter.getObjectMapper().copy();
 
-        this.objectMapper.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Message.class).build());
+        this.objectMapper.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build());
     }
 
     @Bean
