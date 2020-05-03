@@ -18,6 +18,8 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+
+import de.tum.in.www1.artemis.service.distributed.messages.SynchronizationMessage;
 import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.DistributedWebsocketMessage;
 
 @EnableKafka
@@ -54,10 +56,30 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, DistributedWebsocketMessage> kafkaListenerContainerFactory() {
+    public ConsumerFactory<String, SynchronizationMessage> synchronizationMessageConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootStrapServers());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
 
+        Map<String, Object> deserProps = new HashMap<>();
+        deserProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        JsonDeserializer<SynchronizationMessage> jsonDeserializer = new JsonDeserializer<>(objectMapper);
+        jsonDeserializer.configure(deserProps, false);
+
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), jsonDeserializer);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, DistributedWebsocketMessage> distributedWebsocketMessageListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, DistributedWebsocketMessage> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(distributedWebsocketMessageConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, SynchronizationMessage> synchronizationMessageListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, SynchronizationMessage> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(synchronizationMessageConsumerFactory());
         return factory;
     }
 }

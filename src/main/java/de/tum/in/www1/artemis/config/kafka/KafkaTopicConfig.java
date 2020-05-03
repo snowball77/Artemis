@@ -31,4 +31,9 @@ public class KafkaTopicConfig {
     public NewTopic topicWebsocketSynchronize() {
         return new NewTopic("websocket-synchronize", 1, (short) 1);
     }
+
+    @Bean
+    public NewTopic topicDistributedSynchronize() {
+        return new NewTopic("distributed-synchronize", 1, (short) 1);
+    }
 }

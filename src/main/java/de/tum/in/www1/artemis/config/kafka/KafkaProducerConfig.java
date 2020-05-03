@@ -17,6 +17,8 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import de.tum.in.www1.artemis.service.distributed.messages.SynchronizationMessage;
 import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.DistributedWebsocketMessage;
 
 @Configuration
@@ -42,7 +44,20 @@ public class KafkaProducerConfig {
     }
 
     @Bean
+    public ProducerFactory<String, SynchronizationMessage> distributedSynchronizationMessageProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootStrapServers());
+
+        return new DefaultKafkaProducerFactory<>(configProps, new StringSerializer(), new JsonSerializer<>(objectMapper));
+    }
+
+    @Bean
     public KafkaTemplate<String, DistributedWebsocketMessage> distributedWebsocketMessageKafkaTemplate() {
         return new KafkaTemplate<>(distributedWebsocketMessageProducerFactory());
+    }
+
+    @Bean
+    public KafkaTemplate<String, SynchronizationMessage> distributedSynchronizationMessageKafkaTemplate() {
+        return new KafkaTemplate<>(distributedSynchronizationMessageProducerFactory());
     }
 }

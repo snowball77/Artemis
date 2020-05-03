@@ -18,7 +18,7 @@ import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.*;
 
 @Service
 @Profile("kafka")
-@KafkaListener(groupId = "${artemis.kafka.group-id}", topics = "websocket-synchronize")
+@KafkaListener(groupId = "${artemis.kafka.group-id}", topics = "websocket-synchronize", containerFactory = "distributedWebsocketMessageListenerContainerFactory")
 public class DistributedMessagingTemplate implements ArtemisMessagingTemplate {
 
     private static final Logger log = LoggerFactory.getLogger(DistributedMessagingTemplate.class);

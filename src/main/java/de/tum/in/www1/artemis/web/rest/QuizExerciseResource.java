@@ -22,6 +22,8 @@ import de.tum.in.www1.artemis.domain.User;
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.repository.QuizExerciseRepository;
 import de.tum.in.www1.artemis.service.*;
+import de.tum.in.www1.artemis.service.distributed.SynchronizationService;
+import de.tum.in.www1.artemis.service.distributed.messages.UpdateQuizMessage;
 import de.tum.in.www1.artemis.service.scheduled.QuizScheduleService;
 import de.tum.in.www1.artemis.web.rest.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -56,9 +58,11 @@ public class QuizExerciseResource {
 
     private final GroupNotificationService groupNotificationService;
 
+    private final SynchronizationService synchronizationService;
+
     public QuizExerciseResource(QuizExerciseService quizExerciseService, QuizExerciseRepository quizExerciseRepository, CourseService courseService,
             QuizStatisticService quizStatisticService, AuthorizationCheckService authCheckService, GroupNotificationService groupNotificationService,
-            QuizScheduleService quizScheduleService, ExerciseService exerciseService, UserService userService) {
+            QuizScheduleService quizScheduleService, ExerciseService exerciseService, UserService userService, SynchronizationService synchronizationService) {
         this.quizExerciseService = quizExerciseService;
         this.quizExerciseRepository = quizExerciseRepository;
         this.userService = userService;
@@ -68,6 +72,7 @@ public class QuizExerciseResource {
         this.groupNotificationService = groupNotificationService;
         this.quizScheduleService = quizScheduleService;
         this.exerciseService = exerciseService;
+        this.synchronizationService = synchronizationService;
     }
 
     /**
@@ -154,6 +159,8 @@ public class QuizExerciseResource {
         quizExercise.setMaxScore(quizExercise.getMaxTotalScore().doubleValue());
         quizExercise = quizExerciseService.save(quizExercise);
         quizScheduleService.scheduleQuizStart(quizExercise);
+
+        synchronizationService.informServers(new UpdateQuizMessage(quizExercise.getId()));
 
         // notify websocket channel of changes to the quiz exercise
         quizExerciseService.sendQuizExerciseToSubscribedClients(quizExercise);
@@ -316,6 +323,8 @@ public class QuizExerciseResource {
         // save quiz exercise
         quizExercise = quizExerciseRepository.save(quizExercise);
         quizScheduleService.scheduleQuizStart(quizExercise);
+
+        synchronizationService.informServers(new UpdateQuizMessage(quizExercise.getId()));
 
         // notify websocket channel of changes to the quiz exercise
         quizExerciseService.sendQuizExerciseToSubscribedClients(quizExercise);
