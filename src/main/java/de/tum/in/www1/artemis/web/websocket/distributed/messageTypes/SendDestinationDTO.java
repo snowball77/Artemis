@@ -77,4 +77,9 @@ public class SendDestinationDTO extends DistributedWebsocketMessage {
             throw new IllegalArgumentException("Undefined MessageType received, cannot construct");
         }
     }
+
+    @Override
+    public String toString() {
+        return "SendDestinationDTO{" + "destination='" + destination + '\'' + ", headers=" + headers + ", messageType=" + messageType + ", payload='" + payload + '\'' + '}';
+    }
 }

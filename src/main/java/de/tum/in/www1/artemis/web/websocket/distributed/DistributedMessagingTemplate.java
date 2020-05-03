@@ -18,7 +18,7 @@ import de.tum.in.www1.artemis.web.websocket.distributed.messageTypes.*;
 
 @Service
 @Profile("kafka")
-@KafkaListener(id = "distributedMessagingTemplate", topics = "websocket-synchronize")
+@KafkaListener(groupId = "${artemis.kafka.group-id}", topics = "websocket-synchronize")
 public class DistributedMessagingTemplate implements ArtemisMessagingTemplate {
 
     private static final Logger log = LoggerFactory.getLogger(DistributedMessagingTemplate.class);
@@ -39,45 +39,64 @@ public class DistributedMessagingTemplate implements ArtemisMessagingTemplate {
     }
 
     public void convertAndSendToUser(String user, String destination, Object payload) throws MessagingException {
-        try {
-            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendToUserDTO(user, destination, objectMapper.writeValueAsString(payload)));
+        if (payload instanceof String) {
+            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendToUserDTO(user, destination, (String) payload));
         }
-        catch (JsonProcessingException e) {
-            log.error("Error while sending WebSocket message to Kafka", e);
+        else {
+            try {
+                kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendToUserDTO(user, destination, objectMapper.writeValueAsString(payload)));
+            }
+            catch (JsonProcessingException e) {
+                log.error("Error while sending WebSocket message to Kafka", e);
+            }
         }
     }
 
     public void send(String destination, Message<?> message) throws MessagingException {
-        try {
-            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new SendDestinationDTO(destination, message, objectMapper.writeValueAsString(message.getPayload())));
+        if (message.getPayload() instanceof String) {
+            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new SendDestinationDTO(destination, message, (String) message.getPayload()));
         }
-        catch (JsonProcessingException e) {
-            log.error("Error while sending WebSocket message to Kafka", e);
+        else {
+            try {
+                kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message",
+                        new SendDestinationDTO(destination, message, objectMapper.writeValueAsString(message.getPayload())));
+            }
+            catch (JsonProcessingException e) {
+                log.error("Error while sending WebSocket message to Kafka", e);
+            }
         }
     }
 
     public void convertAndSend(String destination, Object payload) throws MessagingException {
-        try {
-            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendDestinationDTO(destination, objectMapper.writeValueAsString(payload)));
+        if (payload instanceof String) {
+            kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendDestinationDTO(destination, (String) payload));
         }
-        catch (JsonProcessingException e) {
-            log.error("Error while sending WebSocket message to Kafka", e);
+        else {
+            try {
+                kafkaTemplate.send(WEBSOCKET_SYNCHRONIZE_TOPIC, "sync-message", new ConvertAndSendDestinationDTO(destination, objectMapper.writeValueAsString(payload)));
+            }
+            catch (JsonProcessingException e) {
+                log.error("Error while sending WebSocket message to Kafka", e);
+            }
         }
     }
 
     @KafkaHandler
     public void listen(ConvertAndSendDestinationDTO convertAndSendDestinationDTO) {
+        log.debug("Received ConvertAndSendDestinationDTO: " + convertAndSendDestinationDTO);
         websocketTemplate.convertAndSend(convertAndSendDestinationDTO.getDestination(), convertAndSendDestinationDTO.getPayload());
     }
 
     @KafkaHandler
     public void listen(ConvertAndSendToUserDTO convertAndSendToUserDTO) {
+        log.debug("Received ConvertAndSendToUserDTO: " + convertAndSendToUserDTO);
         websocketTemplate.convertAndSendToUser(convertAndSendToUserDTO.getUser(), convertAndSendToUserDTO.getDestination(), convertAndSendToUserDTO.getPayload());
     }
 
     @KafkaHandler
     public void listen(SendDestinationDTO sendDestinationDTO) {
-        websocketTemplate.send(sendDestinationDTO.getDestination(), sendDestinationDTO.getMessage());
+        log.debug("SendDestinationDTO: " + sendDestinationDTO);
+        websocketTemplate.convertAndSend(sendDestinationDTO.getDestination(), sendDestinationDTO.getMessage());
     }
 
     @KafkaHandler(isDefault = true)

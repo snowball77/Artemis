@@ -31,4 +31,9 @@ public class ConvertAndSendToUserDTO extends DistributedWebsocketMessage {
     public void setDestination(String destination) {
         this.destination = destination;
     }
+
+    @Override
+    public String toString() {
+        return "ConvertAndSendToUserDTO{" + "user='" + user + '\'' + ", destination='" + destination + '\'' + ", payload='" + payload + '\'' + '}';
+    }
 }

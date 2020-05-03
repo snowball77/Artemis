@@ -20,4 +20,9 @@ public class ConvertAndSendDestinationDTO extends DistributedWebsocketMessage {
     public void setDestination(String destination) {
         this.destination = destination;
     }
+
+    @Override
+    public String toString() {
+        return "ConvertAndSendDestinationDTO{" + "destination='" + destination + '\'' + ", payload='" + payload + '\'' + '}';
+    }
 }

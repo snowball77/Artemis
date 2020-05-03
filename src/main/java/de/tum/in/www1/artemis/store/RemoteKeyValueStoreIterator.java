@@ -34,7 +34,7 @@ public class RemoteKeyValueStoreIterator<K, V> implements Iterator<K> {
             Properties props = new Properties();
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");    // assuming that the Kafka broker this application is talking to runs on local machine with
                                                                                      // port 9092
-            props.put(ConsumerConfig.GROUP_ID_CONFIG, "group1"); // TODO: Make group id unique
+            props.put(ConsumerConfig.GROUP_ID_CONFIG, "shared-artemis-group");
             props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, remoteKeyValueStore.keySerde.deserializer().getClass());
             props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, remoteKeyValueStore.valueSerde.deserializer().getClass());
             consumer = new KafkaConsumer<>(props);

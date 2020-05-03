@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -304,8 +303,8 @@ public class QuizExerciseService {
         try {
             long start = System.currentTimeMillis();
             Class view = viewForStudentsInQuizExercise(quizExercise);
-            byte[] payload = objectMapper.writerWithView(view).writeValueAsBytes(quizExercise);
-            messagingTemplate.send("/topic/quizExercise/" + quizExercise.getId(), MessageBuilder.withPayload(payload).build());
+            String payload = objectMapper.writerWithView(view).writeValueAsString(quizExercise);
+            messagingTemplate.convertAndSend("/topic/quizExercise/" + quizExercise.getId(), payload);
             log.info("    sent out quizExercise to all listening clients in {} ms", System.currentTimeMillis() - start);
         }
         catch (JsonProcessingException e) {
