@@ -1,5 +1,6 @@
 package de.tum.in.www1.artemis.service.distributed;
 
+import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.service.QuizExerciseService;
+import de.tum.in.www1.artemis.service.SessionFactoryService;
 import de.tum.in.www1.artemis.service.distributed.messages.SynchronizationMessage;
 import de.tum.in.www1.artemis.service.distributed.messages.UpdateQuizMessage;
 import de.tum.in.www1.artemis.service.scheduled.QuizScheduleService;
@@ -29,15 +31,18 @@ public class DistributedSynchronizationService implements SynchronizationService
 
     KafkaTemplate<String, SynchronizationMessage> distributedSynchronizationKafkaTemplate;
 
+    private SessionFactory sessionFactory;
+
     private QuizExerciseService quizExerciseService;
 
     private QuizScheduleService quizScheduleService;
 
     public DistributedSynchronizationService(KafkaTemplate<String, SynchronizationMessage> distributedSynchronizationKafkaTemplate, QuizExerciseService quizExerciseService,
-            QuizScheduleService quizScheduleService) {
+            QuizScheduleService quizScheduleService, SessionFactoryService sessionFactoryService) {
         this.distributedSynchronizationKafkaTemplate = distributedSynchronizationKafkaTemplate;
         this.quizExerciseService = quizExerciseService;
         this.quizScheduleService = quizScheduleService;
+        this.sessionFactory = sessionFactoryService.getSessionFactory();
     }
 
     @Override
@@ -57,6 +62,9 @@ public class DistributedSynchronizationService implements SynchronizationService
             // Ignore own messages
             return;
         }
+
+        // Clear saved QuizExercises so changes in the database are fetched correctly
+        sessionFactory.getCache().evict(QuizExercise.class);
 
         QuizExercise quizExercise = quizExerciseService.findOneWithQuestions(updateQuizMessage.getQuizId());
         quizScheduleService.scheduleQuizStart(quizExercise);
