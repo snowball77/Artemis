@@ -23,6 +23,13 @@ services:
     networks:
         - artemis
 
+  rabbitmq:
+      build: rabbitmq
+      ports:
+          - 61613:61613
+      networks:
+          - artemis
+
 networks:
     artemis:
         driver: "bridge"

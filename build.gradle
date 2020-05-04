@@ -179,6 +179,13 @@ dependencies {
     // import JHipster dependencies BOM
     implementation platform("io.github.jhipster:jhipster-dependencies:${jhipster_dependencies_version}" )
 
+    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.3.5.RELEASE'
+    compile group: 'io.projectreactor.netty', name: 'reactor-netty', version: '0.9.7.RELEASE'
+    compile group: 'io.projectreactor.spring', name: 'reactor-spring-context', version: '2.0.7.RELEASE'
+    compile group: 'io.netty', name: 'netty-all', version: '4.1.49.Final'
+
+
+
     implementation "io.github.jhipster:jhipster-framework"
     implementation "org.springframework.boot:spring-boot-starter-cache:${spring_boot_version}"
     implementation "io.micrometer:micrometer-registry-prometheus:1.5.0"
