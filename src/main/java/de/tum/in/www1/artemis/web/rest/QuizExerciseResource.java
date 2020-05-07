@@ -23,7 +23,7 @@ import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.repository.QuizExerciseRepository;
 import de.tum.in.www1.artemis.service.*;
 import de.tum.in.www1.artemis.service.distributed.SynchronizationService;
-import de.tum.in.www1.artemis.service.distributed.messages.UpdateQuizMessage;
+import de.tum.in.www1.artemis.service.distributed.messages.QuizUpdateMessage;
 import de.tum.in.www1.artemis.service.scheduled.QuizScheduleService;
 import de.tum.in.www1.artemis.web.rest.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -160,7 +160,7 @@ public class QuizExerciseResource {
         quizExercise = quizExerciseService.save(quizExercise);
         quizScheduleService.scheduleQuizStart(quizExercise);
 
-        synchronizationService.informServers(new UpdateQuizMessage(quizExercise.getId()));
+        synchronizationService.informServers(new QuizUpdateMessage(quizExercise.getId()));
 
         // notify websocket channel of changes to the quiz exercise
         quizExerciseService.sendQuizExerciseToSubscribedClients(quizExercise);
@@ -324,7 +324,7 @@ public class QuizExerciseResource {
         quizExercise = quizExerciseRepository.save(quizExercise);
         quizScheduleService.scheduleQuizStart(quizExercise);
 
-        synchronizationService.informServers(new UpdateQuizMessage(quizExercise.getId()));
+        synchronizationService.informServers(new QuizUpdateMessage(quizExercise.getId()));
 
         // notify websocket channel of changes to the quiz exercise
         quizExerciseService.sendQuizExerciseToSubscribedClients(quizExercise);

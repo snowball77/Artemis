@@ -71,10 +71,6 @@ public class QuizScheduleService {
         startSchedule(3 * 1000);                          // every 3 seconds
     }
 
-    private QuizExerciseSchedule getOrCreateQuizExerciseSchedule(long quizExerciseId) {
-        return getOrCreateQuizExerciseSchedule(quizExerciseService.findOne(quizExerciseId));
-    }
-
     private QuizExerciseSchedule getOrCreateQuizExerciseSchedule(QuizExercise quizExercise) {
         if (!quizExerciseSchedules.containsKey(quizExercise.getId())) {
             log.info("Creating new scheduler for quiz " + quizExercise.getId());
@@ -237,7 +233,7 @@ public class QuizScheduleService {
     }
 
     public void clearQuizData(long quizExerciseId) {
-        QuizExerciseSchedule quizExerciseSchedule = getOrCreateQuizExerciseSchedule(quizExerciseId);
+        QuizExerciseSchedule quizExerciseSchedule = quizExerciseSchedules.get(quizExerciseId);
         if (quizExerciseSchedule != null) {
             quizExerciseSchedule.clearQuizData();
         }

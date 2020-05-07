@@ -1,15 +1,15 @@
 package de.tum.in.www1.artemis.service.distributed.messages;
 
-public class UpdateQuizMessage extends SynchronizationMessage {
+public class QuizUpdateMessage extends SynchronizationMessage {
 
     private Long quizId;
 
-    public UpdateQuizMessage(String sendingServer, Long quizId) {
+    public QuizUpdateMessage(String sendingServer, Long quizId) {
         super(sendingServer);
         this.quizId = quizId;
     }
 
-    public UpdateQuizMessage(Long quizId) {
+    public QuizUpdateMessage(Long quizId) {
         super(null);
         this.quizId = quizId;
     }

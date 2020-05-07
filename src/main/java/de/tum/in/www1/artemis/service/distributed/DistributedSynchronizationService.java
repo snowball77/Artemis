@@ -13,8 +13,9 @@ import org.springframework.stereotype.Service;
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.service.QuizExerciseService;
 import de.tum.in.www1.artemis.service.SessionFactoryService;
+import de.tum.in.www1.artemis.service.distributed.messages.QuizResetMessage;
+import de.tum.in.www1.artemis.service.distributed.messages.QuizUpdateMessage;
 import de.tum.in.www1.artemis.service.distributed.messages.SynchronizationMessage;
-import de.tum.in.www1.artemis.service.distributed.messages.UpdateQuizMessage;
 import de.tum.in.www1.artemis.service.scheduled.QuizScheduleService;
 
 @Service
@@ -55,10 +56,10 @@ public class DistributedSynchronizationService implements SynchronizationService
     }
 
     @KafkaHandler
-    public void listen(UpdateQuizMessage updateQuizMessage) {
-        log.debug("Received UpdateQuizMessage: " + updateQuizMessage);
+    public void listen(QuizUpdateMessage quizUpdateMessage) {
+        log.debug("Received QuizUpdateMessage: " + quizUpdateMessage);
 
-        if (updateQuizMessage.getSendingServer().equals(serverId)) {
+        if (quizUpdateMessage.getSendingServer().equals(serverId)) {
             // Ignore own messages
             return;
         }
@@ -66,8 +67,20 @@ public class DistributedSynchronizationService implements SynchronizationService
         // Clear saved QuizExercises so changes in the database are fetched correctly
         sessionFactory.getCache().evict(QuizExercise.class);
 
-        QuizExercise quizExercise = quizExerciseService.findOneWithQuestions(updateQuizMessage.getQuizId());
+        QuizExercise quizExercise = quizExerciseService.findOneWithQuestions(quizUpdateMessage.getQuizId());
         quizScheduleService.scheduleQuizStart(quizExercise);
+    }
+
+    @KafkaHandler
+    public void listen(QuizResetMessage quizResetMessage) {
+        log.debug("Received QuizResetMessage: " + quizResetMessage);
+
+        if (quizResetMessage.getSendingServer().equals(serverId)) {
+            // Ignore own messages
+            return;
+        }
+
+        quizScheduleService.clearQuizData(quizResetMessage.getQuizId());
     }
 
     @KafkaHandler(isDefault = true)
