@@ -18,8 +18,11 @@ import org.apache.kafka.streams.state.Stores;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import com.google.common.collect.ImmutableMap;
+import de.tum.in.www1.artemis.service.KafkaService;
 
 public class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
+
+    private KafkaService kafkaService;
 
     private ReadOnlyKeyValueStore<K, V> readOnlyKeyValueStore;
 
@@ -29,8 +32,13 @@ public class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
     private RemoteKeyValueStoreIterator<K, V> remoteKeyValueStoreIterator;
 
-    public RemoteKeyValueStore(String topic, Class<? super K> keyClassType, Class<? super V> valueClassType) {
+    private Class<? super K> keyClassType;
+
+    private Class<? super V> valueClassType;
+
+    public RemoteKeyValueStore(String topic, Class<? super K> keyClassType, Class<? super V> valueClassType, KafkaService kafkaService) {
         super(topic);
+        this.kafkaService = kafkaService;
 
         setupGlobalStore(keyClassType, valueClassType);
         setUpProducer();
@@ -39,8 +47,10 @@ public class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
         remoteKeyValueStoreIterator = new RemoteKeyValueStoreIterator<>(this);
     }
 
-    public RemoteKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
+    public RemoteKeyValueStore(String topic, Serde<K> keySerde, Serde<V> valueSerde, KafkaService kafkaService) {
         super(topic, keySerde, valueSerde);
+        this.kafkaService = kafkaService;
+
         setupGlobalStore(null, null);
         setUpProducer();
         setUpRegisterProducer();
@@ -95,8 +105,6 @@ public class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
 
                     @Override
                     public void process(Object key, Object value) {
-                        System.out.printf("Old value: %s%n", keyValueStore.get(key));
-                        System.out.printf("Storing %s: %s%n", key, value);
                         keyValueStore.put(key, value);
                     }
 
@@ -182,6 +190,14 @@ public class RemoteKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
     @Override
     public void registerKey(K key) {
         writeToRegisterTopic(key);
+    }
+
+    @Override
+    public void clear() {
+        kafkaService.deleteTopic(getTopic());
+        kafkaService.deleteTopic(getIteratorTopic());
+
+        setupGlobalStore(keyClassType, valueClassType);
     }
 
     String getIteratorTopic() {

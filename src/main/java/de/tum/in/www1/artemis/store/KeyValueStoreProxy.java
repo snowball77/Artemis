@@ -24,7 +24,6 @@ public class KeyValueStoreProxy<K, V> implements KeyValueStore<K, V> {
         keyValueStore.delete(key);
     }
 
-    @Override
     public boolean exists(K key) {
         return keyValueStore.exists(key);
     }
@@ -43,5 +42,9 @@ public class KeyValueStoreProxy<K, V> implements KeyValueStore<K, V> {
 
     public void registerKey(K key) {
         keyValueStore.registerKey(key);
+    }
+
+    public void clear() {
+        keyValueStore.clear();
     }
 }

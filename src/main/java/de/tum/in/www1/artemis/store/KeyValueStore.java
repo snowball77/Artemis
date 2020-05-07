@@ -64,4 +64,9 @@ public interface KeyValueStore<K, V> {
      * @param key the key that should be registered
      */
     void registerKey(K key);
+
+    /**
+     * Remove all saved data from the store.
+     */
+    void clear();
 }

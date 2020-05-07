@@ -54,4 +54,9 @@ public class LocalKeyValueStore<K, V> extends AbstractKeyValueStore<K, V> {
     public void registerKey(K key) {
         // Nothing to do here as all used keys are registered by default in the HashMap
     }
+
+    @Override
+    public void clear() {
+        localStorage.clear();
+    }
 }

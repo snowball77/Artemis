@@ -192,7 +192,7 @@ public class QuizExerciseSchedule {
     }
 
     public void clearQuizData() {
-        // TODO: Check if needed
+        submissionKeyValueStore.clear();
     }
 
     public void processCachedQuizSubmissions() {
