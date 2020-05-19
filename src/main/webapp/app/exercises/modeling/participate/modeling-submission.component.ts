@@ -47,7 +47,6 @@ export class ModelingSubmissionComponent implements OnInit, OnDestroy, Component
                 this.modelSubscriber.unsubscribe();
             }
             this.modelSubscriber = this._modelingEditor.subscribeToModelChanges((model: UMLModel) => {
-                console.log(model);
                 this.umlModel = model;
             });
             this.umlModel = this._modelingEditor.getCurrentModel();
