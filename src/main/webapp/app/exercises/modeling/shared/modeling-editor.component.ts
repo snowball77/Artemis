@@ -5,6 +5,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import interact from 'interactjs';
 import { GuidedTourService } from 'app/guided-tour/guided-tour.service';
 import { associationUML, personUML, studentUML } from 'app/guided-tour/guided-tour-task.model';
+import { Subject, Subscription } from 'rxjs';
 
 @Component({
     selector: 'jhi-modeling-editor',
@@ -26,6 +27,8 @@ export class ModelingEditorComponent implements AfterViewInit, OnDestroy, OnChan
     resizeOptions: { initialWidth: string; maxWidth?: number };
 
     private apollonEditor: ApollonEditor | null = null;
+
+    private modelChange = new Subject<UMLModel>();
 
     constructor(private jhiAlertService: AlertService, private renderer: Renderer2, private modalService: NgbModal, private guidedTourService: GuidedTourService) {}
 
@@ -84,6 +87,9 @@ export class ModelingEditorComponent implements AfterViewInit, OnDestroy, OnChan
             readonly: this.readOnly,
             type: this.diagramType,
         });
+        // TODO: fix in Apollon
+        // @ts-ignore
+        this.apollonEditor!.subscribeToModelChange((model: UMLModel) => this.modelChange.next(model));
     }
 
     get isApollonEditorMounted(): boolean {
@@ -209,5 +215,9 @@ export class ModelingEditorComponent implements AfterViewInit, OnDestroy, OnChan
      */
     elementWithMethod(method: string, umlModel: UMLModel) {
         return umlModel.elements.find((element) => element.name.includes(method) && element.type === UMLElementType.ClassMethod);
+    }
+
+    public subscribeToModelChanges(callback: (model: UMLModel) => void): Subscription {
+        return this.modelChange.subscribe((model: UMLModel) => callback(model));
     }
 }

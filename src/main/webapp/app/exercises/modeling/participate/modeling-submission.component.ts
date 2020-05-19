@@ -37,8 +37,29 @@ import { Subject } from 'rxjs';
 })
 // TODO CZ: move assessment functionality to separate assessment result view?
 export class ModelingSubmissionComponent implements OnInit, OnDestroy, ComponentCanDeactivate {
+    private _modelingEditor: ModelingEditorComponent;
+
     @ViewChild(ModelingEditorComponent, { static: false })
-    modelingEditor: ModelingEditorComponent;
+    set modelingEditor(editor: ModelingEditorComponent) {
+        this._modelingEditor = editor;
+        if (this._modelingEditor) {
+            if (this.modelSubscriber) {
+                this.modelSubscriber.unsubscribe();
+            }
+            this.modelSubscriber = this._modelingEditor.subscribeToModelChanges((model: UMLModel) => {
+                console.log(model);
+                this.umlModel = model;
+            });
+            this.umlModel = this._modelingEditor.getCurrentModel();
+        }
+    }
+
+    get modelingEditor() {
+        return this._modelingEditor;
+    }
+
+    modelSubscriber: Subscription;
+
     ButtonType = ButtonType;
 
     private subscription: Subscription;
@@ -102,7 +123,14 @@ export class ModelingSubmissionComponent implements OnInit, OnDestroy, Component
         this.subscription = this.route.params.subscribe((params) => {
             if (params['participationId']) {
                 this.modelingSubmissionService.getLatestSubmissionForModelingEditor(params['participationId']).subscribe(
-                    (modelingSubmission) => this.updateModelingSubmission(modelingSubmission),
+                    (modelingSubmission) => {
+                        this.updateModelingSubmission(modelingSubmission);
+                        if (this.modelingExercise.teamMode) {
+                            this.setupSubmissionStreamForTeam();
+                        } else {
+                            this.setAutoSaveTimer();
+                        }
+                    },
                     (error) => {
                         if (error.status === 403) {
                             this.router.navigate(['accessdenied']);
@@ -156,11 +184,6 @@ export class ModelingSubmissionComponent implements OnInit, OnDestroy, Component
                 this.assessmentResult = assessmentResult;
                 this.prepareAssessmentData();
             });
-        }
-        if (this.modelingExercise.teamMode) {
-            this.setupSubmissionStreamForTeam();
-        } else {
-            this.setAutoSaveTimer();
         }
         this.isLoading = false;
         this.guidedTourService.enableTourForExercise(this.modelingExercise, modelingTour, true);
@@ -489,8 +512,7 @@ export class ModelingSubmissionComponent implements OnInit, OnDestroy, Component
         if (!this.modelingEditor || !this.modelingEditor.isApollonEditorMounted) {
             return true;
         }
-        const model: UMLModel = this.modelingEditor.getCurrentModel();
-        return !this.modelHasUnsavedChanges(model);
+        return !this.modelHasUnsavedChanges(this.umlModel);
     }
 
     /**
