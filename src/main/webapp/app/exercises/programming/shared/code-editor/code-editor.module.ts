@@ -18,9 +18,18 @@ import { CodeEditorFileBrowserFileComponent } from 'app/exercises/programming/sh
 import { CodeEditorFileBrowserComponent } from 'app/exercises/programming/shared/code-editor/file-browser/code-editor-file-browser.component';
 import { CodeEditorStatusComponent } from 'app/exercises/programming/shared/code-editor/status/code-editor-status.component';
 import { FeatureToggleModule } from 'app/shared/feature-toggle/feature-toggle.module';
-
+import { CodemirrorModule } from '@ctrl/ngx-codemirror';
+import { CodeEditorCodemirrorComponent } from 'app/exercises/programming/shared/code-editor/codemirror/code-editor-codemirror.component';
 @NgModule({
-    imports: [AceEditorModule, MomentModule, ArtemisSharedModule, FeatureToggleModule, TreeviewModule.forRoot(), ArtemisProgrammingExerciseInstructionsEditorModule],
+    imports: [
+        AceEditorModule,
+        MomentModule,
+        ArtemisSharedModule,
+        FeatureToggleModule,
+        TreeviewModule.forRoot(),
+        ArtemisProgrammingExerciseInstructionsEditorModule,
+        CodemirrorModule,
+    ],
     declarations: [
         CodeEditorGridComponent,
         CodeEditorRepositoryIsLockedComponent,
@@ -35,6 +44,7 @@ import { FeatureToggleModule } from 'app/shared/feature-toggle/feature-toggle.mo
         CodeEditorStatusComponent,
         CodeEditorActionsComponent,
         CodeEditorResolveConflictModalComponent,
+        CodeEditorCodemirrorComponent,
     ],
     exports: [
         CodeEditorGridComponent,
@@ -44,6 +54,7 @@ import { FeatureToggleModule } from 'app/shared/feature-toggle/feature-toggle.mo
         CodeEditorActionsComponent,
         CodeEditorInstructionsComponent,
         CodeEditorBuildOutputComponent,
+        CodeEditorCodemirrorComponent,
     ],
     entryComponents: [CodeEditorFileBrowserDeleteComponent, CodeEditorResolveConflictModalComponent],
     providers: [],
