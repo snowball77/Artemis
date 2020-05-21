@@ -65,6 +65,7 @@
         (onError)="onError($event)"
     ></jhi-code-editor-ace>
     <jhi-code-editor-codemirror *ngIf="editorType === 'codemirror'" editorCenter></jhi-code-editor-codemirror>
+    <jhi-code-editor-monaco *ngIf="editorType === 'monaco'" editorCenter></jhi-code-editor-monaco>
     <jhi-code-editor-instructions
         editorSidebarRight
         [participation]="participation"

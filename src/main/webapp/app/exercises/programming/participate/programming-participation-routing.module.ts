@@ -32,6 +32,20 @@ const routes: Routes = [
         canActivate: [UserRouteAccessService],
         canDeactivate: [PendingChangesGuard],
     },
+    {
+        path: ':participationId/monaco',
+        component: CodeEditorStudentContainerComponent,
+        data: {
+            authorities: ['ROLE_USER'],
+            pageTitle: 'artemisApp.editor.home.title',
+            flushRepositoryCacheAfter: 900000, // 15 min
+            participationCache: {},
+            repositoryCache: {},
+            editorType: 'monaco',
+        },
+        canActivate: [UserRouteAccessService],
+        canDeactivate: [PendingChangesGuard],
+    },
 ];
 
 @NgModule({
