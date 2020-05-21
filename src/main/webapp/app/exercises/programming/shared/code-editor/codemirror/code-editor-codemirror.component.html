@@ -1,19 +1,21 @@
-<div style="max-width: 100%;" class="card">
+<div class="card">
     <div class="card-header bg-primary text-white">
         <h3 class="card-title">
             <fa-icon [icon]="['far', 'file-alt']"></fa-icon>
         </h3>
     </div>
     <div style="height: 100%;">
-        <ngx-codemirror
+        <textarea id="editor-textarea"></textarea>
+        <!-- <ngx-codemirror
             [(ngModel)]="content"
             [options]="{
                 lineNumbers: true,
                 mode: 'text/x-java',
                 lineWrapping: true,
                 matchBrackets: true,
-                autoCloseBrackets: true
+                autoCloseBrackets: true,
+                gutters: ['CodeMirror-linenumbers', 'breakpoints']
             }"
-        ></ngx-codemirror>
+        ></ngx-codemirror> -->
     </div>
 </div>
