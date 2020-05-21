@@ -51,6 +51,8 @@ export class CodeEditorStudentContainerComponent extends CodeEditorContainer imp
     participationCouldNotBeFetched = false;
     repositoryIsLocked = false;
 
+    editorType = 'ace';
+
     constructor(
         private resultService: ResultService,
         private domainService: DomainService,
@@ -71,6 +73,12 @@ export class CodeEditorStudentContainerComponent extends CodeEditorContainer imp
      * Will load the participation according to participation Id with the latest result and result details.
      */
     ngOnInit(): void {
+        // Evaluate editor type
+        this.route.data.subscribe((data) => {
+            if (data.editorType) {
+                this.editorType = data.editorType;
+            }
+        });
         this.paramSub = this.route.params.subscribe((params) => {
             this.loadingParticipation = true;
             this.participationCouldNotBeFetched = false;

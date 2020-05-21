@@ -55,6 +55,7 @@
         (onToggleCollapse)="onToggleCollapse($event)"
     ></jhi-code-editor-file-browser>
     <jhi-code-editor-ace
+        *ngIf="editorType === 'ace'"
         editorCenter
         [selectedFile]="selectedFile"
         [fileChange]="fileChange"
@@ -63,6 +64,7 @@
         (onFileContentChange)="onFileContentChange($event)"
         (onError)="onError($event)"
     ></jhi-code-editor-ace>
+    <jhi-code-editor-codemirror *ngIf="editorType === 'codemirror'" editorCenter></jhi-code-editor-codemirror>
     <jhi-code-editor-instructions
         editorSidebarRight
         [participation]="participation"

@@ -18,6 +18,20 @@ const routes: Routes = [
         canActivate: [UserRouteAccessService],
         canDeactivate: [PendingChangesGuard],
     },
+    {
+        path: ':participationId/codemirror',
+        component: CodeEditorStudentContainerComponent,
+        data: {
+            authorities: ['ROLE_USER'],
+            pageTitle: 'artemisApp.editor.home.title',
+            flushRepositoryCacheAfter: 900000, // 15 min
+            participationCache: {},
+            repositoryCache: {},
+            editorType: 'codemirror',
+        },
+        canActivate: [UserRouteAccessService],
+        canDeactivate: [PendingChangesGuard],
+    },
 ];
 
 @NgModule({
