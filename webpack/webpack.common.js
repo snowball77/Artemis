@@ -3,7 +3,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const AngularCompilerPlugin = require('@ngtools/webpack').AngularCompilerPlugin;
 const MergeJsonWebpackPlugin = require("merge-jsons-webpack-plugin");
-
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const utils = require('./utils.js');
 
 module.exports = (options) => ({
@@ -57,6 +57,13 @@ module.exports = (options) => ({
             },
             // Ignore warnings about System.import in Angular
             { test: /[\/\\]@angular[\/\\].+\.js$/, parser: { system: true } },
+            {
+                test: /\.css$/,
+                use: ['style-loader', 'css-loader']
+            }, {
+                test: /\.ttf$/,
+                use: ['file-loader']
+            }
         ]
     },
     plugins: [
@@ -101,6 +108,7 @@ module.exports = (options) => ({
             mainPath: utils.root('src/main/webapp/app/app.main.ts'),
             tsConfigPath: utils.root('tsconfig.app.json'),
             sourceMap: true
-        })
+        }),
+        new MonacoWebpackPlugin()
     ]
 });

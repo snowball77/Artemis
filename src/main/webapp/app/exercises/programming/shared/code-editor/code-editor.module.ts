@@ -20,6 +20,7 @@ import { CodeEditorStatusComponent } from 'app/exercises/programming/shared/code
 import { FeatureToggleModule } from 'app/shared/feature-toggle/feature-toggle.module';
 import { CodemirrorModule } from '@ctrl/ngx-codemirror';
 import { CodeEditorCodemirrorComponent } from 'app/exercises/programming/shared/code-editor/codemirror/code-editor-codemirror.component';
+import { CodeEditorMonacoComponent } from 'app/exercises/programming/shared/code-editor/monaco/code-editor-monaco.component';
 @NgModule({
     imports: [
         AceEditorModule,
@@ -45,6 +46,7 @@ import { CodeEditorCodemirrorComponent } from 'app/exercises/programming/shared/
         CodeEditorActionsComponent,
         CodeEditorResolveConflictModalComponent,
         CodeEditorCodemirrorComponent,
+        CodeEditorMonacoComponent,
     ],
     exports: [
         CodeEditorGridComponent,
@@ -55,6 +57,7 @@ import { CodeEditorCodemirrorComponent } from 'app/exercises/programming/shared/
         CodeEditorInstructionsComponent,
         CodeEditorBuildOutputComponent,
         CodeEditorCodemirrorComponent,
+        CodeEditorMonacoComponent,
     ],
     entryComponents: [CodeEditorFileBrowserDeleteComponent, CodeEditorResolveConflictModalComponent],
     providers: [],
