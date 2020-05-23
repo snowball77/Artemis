@@ -66,6 +66,7 @@
     ></jhi-code-editor-ace>
     <jhi-code-editor-codemirror *ngIf="editorType === 'codemirror'" editorCenter></jhi-code-editor-codemirror>
     <jhi-code-editor-monaco *ngIf="editorType === 'monaco'" editorCenter></jhi-code-editor-monaco>
+    <jhi-code-editor-codemirror-next *ngIf="editorType === 'codemirror-next'" editorCenter></jhi-code-editor-codemirror-next>
     <jhi-code-editor-instructions
         editorSidebarRight
         [participation]="participation"
