@@ -5,6 +5,7 @@ const AngularCompilerPlugin = require('@ngtools/webpack').AngularCompilerPlugin;
 const MergeJsonWebpackPlugin = require("merge-jsons-webpack-plugin");
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const utils = require('./utils.js');
+const path = require('path');
 
 module.exports = (options) => ({
     resolve: {
@@ -59,10 +60,10 @@ module.exports = (options) => ({
             { test: /[\/\\]@angular[\/\\].+\.js$/, parser: { system: true } },
             {
                 test: /\.css$/,
-                use: ['style-loader', 'css-loader']
-            }, {
-                test: /\.ttf$/,
-                use: ['file-loader']
+                use: ['style-loader', 'css-loader'],
+                include: [
+                    path.resolve(__dirname, "not_exist_path")
+                ],
             }
         ]
     },
