@@ -61,9 +61,7 @@ module.exports = (options) => ({
             {
                 test: /\.css$/,
                 use: ['style-loader', 'css-loader'],
-                include: [
-                    path.resolve(__dirname, "not_exist_path")
-                ],
+
             }
         ]
     },
