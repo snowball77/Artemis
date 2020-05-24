@@ -7,12 +7,6 @@ import 'codemirror/addon/edit/closebrackets';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closetag';
 import * as codeMirror from 'codemirror';
-import { CodemirrorComponent } from '@ctrl/ngx-codemirror/codemirror.component';
-import { Subscription, of, fromEvent } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import { CodeEditorRepositoryFileService } from 'app/exercises/programming/shared/code-editor/service/code-editor-repository.service';
-import { TextChange } from 'app/entities/text-change.model';
-import { AnnotationArray } from 'app/entities/annotation.model';
 
 @Component({
     selector: 'jhi-code-editor-codemirror',
@@ -29,6 +23,14 @@ export class CodeEditorCodemirrorComponent implements AfterViewInit {
             lineWrapping: true,
             matchBrackets: true,
             autoCloseBrackets: true,
+            gutters: ['CodeMirror-linenumbers', 'breakpoints'],
+        });
+
+        editor.on('gutterClick', function (cm, n) {
+            // var info = cm.lineInfo(n);
+            var msg = document.createElement('div');
+            msg.innerText = 'Hier könnte ihr Feedback and Assessment stehen';
+            cm.getDoc().addLineWidget(n, msg, { above: true });
         });
     }
 }
