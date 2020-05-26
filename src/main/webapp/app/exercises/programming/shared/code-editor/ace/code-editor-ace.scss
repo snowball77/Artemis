@@ -18,3 +18,12 @@ Ace Editor
         }
     }
 }
+
+:host ::ng-deep {
+    @import '~codemirror/lib/codemirror';
+    @import '~codemirror/theme/material';
+
+    .CodeMirror {
+        min-height: 100%;
+    }
+}

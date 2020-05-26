@@ -1,11 +1,11 @@
-import 'brace/ext/language_tools';
-import 'brace/ext/modelist';
-import 'brace/mode/java';
-import 'brace/mode/javascript';
-import 'brace/mode/markdown';
-import 'brace/mode/python';
-import 'brace/theme/dreamweaver';
-import { AceEditorComponent } from 'ng2-ace-editor';
+//import 'brace/ext/language_tools';
+//import 'brace/ext/modelist';
+//import 'brace/mode/java';
+//import 'brace/mode/javascript';
+// import 'brace/mode/markdown';
+// import 'brace/mode/python';
+// import 'brace/theme/dreamweaver';
+// import { AceEditorComponent } from 'ng2-ace-editor';
 import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { fromEvent, of, Subscription } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -18,6 +18,14 @@ import { CodeEditorRepositoryFileService } from 'app/exercises/programming/share
 import { CodeEditorGridService } from 'app/exercises/programming/shared/code-editor/service/code-editor-grid.service';
 import { RepositoryFileService } from 'app/exercises/shared/result/repository.service';
 import { TextChange } from 'app/entities/text-change.model';
+import * as codeMirror from 'codemirror';
+import 'codemirror/mode/markdown/markdown';
+import 'codemirror/mode/swift/swift';
+import 'codemirror/mode/clike/clike';
+import 'codemirror/mode/python/python';
+import 'codemirror/addon/edit/closebrackets';
+import 'codemirror/addon/edit/matchbrackets';
+import 'codemirror/addon/edit/closetag';
 
 @Component({
     selector: 'jhi-code-editor-ace',
@@ -25,9 +33,10 @@ import { TextChange } from 'app/entities/text-change.model';
     styleUrls: ['./code-editor-ace.scss'],
     providers: [WindowRef, RepositoryFileService],
 })
-export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestroy {
+export class CodeEditorAceComponent implements AfterViewInit, OnChanges {
     @ViewChild('editor', { static: true })
-    editor: AceEditorComponent;
+    //editor: AceEditorComponent;
+    codemirror: codeMirror.EditorFromTextArea;
 
     @Input()
     selectedFile: string;
@@ -70,7 +79,16 @@ export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestr
      * @desc Sets the theme and other editor options
      */
     ngAfterViewInit(): void {
-        this.editor.setTheme('dreamweaver');
+        this.codemirror = codeMirror.fromTextArea(document.getElementById('editor-textarea') as HTMLTextAreaElement, {
+            lineNumbers: true,
+            mode: 'text/x-java',
+            lineWrapping: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            gutters: ['CodeMirror-linenumbers', 'breakpoints'],
+        });
+
+        /*this.editor.setTheme('dreamweaver');
         this.editor.getEditor().setOptions({
             animatedScroll: true,
             enableBasicAutocompletion: true,
@@ -78,7 +96,7 @@ export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestr
         });
         this.resizeSubscription = this.codeEditorGridService.subscribeForResizeEvents([ResizeType.SIDEBAR_LEFT, ResizeType.SIDEBAR_RIGHT, ResizeType.MAIN_BOTTOM]).subscribe(() => {
             this.editor.getEditor().resize();
-        });
+        });*/
     }
 
     /**
@@ -90,32 +108,54 @@ export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestr
      * @param {SimpleChanges} changes
      */
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes.commitState && changes.commitState.previousValue !== CommitState.UNDEFINED && this.commitState === CommitState.UNDEFINED) {
-            this.fileSession = {};
-            if (this.annotationChange) {
-                this.annotationChange.unsubscribe();
+        if (this.codemirror.getDoc() !== undefined) {
+            if (changes.commitState && changes.commitState.previousValue !== CommitState.UNDEFINED && this.commitState === CommitState.UNDEFINED) {
+                this.fileSession = {};
+                if (this.annotationChange) {
+                    this.annotationChange.unsubscribe();
+                }
+                //this.editor.getEditor().getSession().setValue('');
             }
-            this.editor.getEditor().getSession().setValue('');
+            if (changes.fileChange && changes.fileChange.currentValue) {
+                if (this.fileChange instanceof RenameFileChange || this.fileChange instanceof DeleteFileChange) {
+                    this.fileSession = this.fileService.updateFileReferences(this.fileSession, this.fileChange);
+                } else if (this.fileChange instanceof CreateFileChange && this.selectedFile === this.fileChange.fileName) {
+                    this.fileSession = {
+                        ...this.fileSession,
+                        [this.fileChange.fileName]: { code: '', cursor: { row: 0, column: 0 } },
+                    };
+                    this.initEditorAfterFileChange();
+                }
+            } else if (changes.selectedFile && this.selectedFile) {
+                // Current file has changed
+                // Only load the file from server if there is nothing stored in the editorFileSessions
+                if (!this.fileSession[this.selectedFile]) {
+                    this.loadFile(this.selectedFile);
+                } else {
+                    this.initEditorAfterFileChange();
+                }
+            } else if (changes.buildLogErrors && changes.buildLogErrors.currentValue) {
+                // Build log errors have changed - this can be new build results, but also a file change that has updated the object
+                //this.editor.getEditor().getSession().setAnnotations(this.buildLogErrors.errors[this.selectedFile]);
+                this.buildLogErrors.errors[this.selectedFile].forEach(function (value) {
+                    this.codemirror.setGutterMarker(value.row, 'breakpoints', this.codemirror.lineInfo() ? null : this.makeMarker());
+                });
+            }
+
+            this.codemirror.on('gutterClick', function (cm, n) {
+                // var info = cm.lineInfo(n);
+                var msg = document.createElement('div');
+                msg.innerText = 'Hier könnte ihr Feedback and Assessment stehen';
+                cm.getDoc().addLineWidget(n, msg, { above: true });
+            });
         }
-        if (changes.fileChange && changes.fileChange.currentValue) {
-            if (this.fileChange instanceof RenameFileChange || this.fileChange instanceof DeleteFileChange) {
-                this.fileSession = this.fileService.updateFileReferences(this.fileSession, this.fileChange);
-            } else if (this.fileChange instanceof CreateFileChange && this.selectedFile === this.fileChange.fileName) {
-                this.fileSession = { ...this.fileSession, [this.fileChange.fileName]: { code: '', cursor: { row: 0, column: 0 } } };
-                this.initEditorAfterFileChange();
-            }
-        } else if (changes.selectedFile && this.selectedFile) {
-            // Current file has changed
-            // Only load the file from server if there is nothing stored in the editorFileSessions
-            if (!this.fileSession[this.selectedFile]) {
-                this.loadFile(this.selectedFile);
-            } else {
-                this.initEditorAfterFileChange();
-            }
-        } else if (changes.buildLogErrors && changes.buildLogErrors.currentValue) {
-            // Build log errors have changed - this can be new build results, but also a file change that has updated the object
-            this.editor.getEditor().getSession().setAnnotations(this.buildLogErrors.errors[this.selectedFile]);
-        }
+    }
+
+    makeMarker() {
+        var marker = document.createElement('div');
+        marker.style.color = '#822';
+        marker.innerHTML = 'x';
+        return marker;
     }
 
     /**
@@ -127,21 +167,37 @@ export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestr
         if (this.annotationChange) {
             this.annotationChange.unsubscribe();
         }
-        this.editor.getEditor().getSession().setValue(this.fileSession[this.selectedFile].code);
-        this.annotationChange = fromEvent(this.editor.getEditor().getSession(), 'change').subscribe(([change]) => {
+        //this.editor.getEditor().getSession().setValue(this.fileSession[this.selectedFile].code);
+        this.codemirror.getDoc().setValue(this.fileSession[this.selectedFile].code);
+        /*this.annotationChange = fromEvent(this.editor.getEditor().getSession(), 'change').subscribe(([change]) => {
             this.editorChangeLog.push(change);
+        });*/
+        this.codemirror.on('change', function () {
+            this.editorChangeLog.push(this.codemirror.getDoc());
         });
-
+        /*this.annotationChange = fromEvent(this.codemirror.getDoc()., 'change').subscribe(([change]) => {
+            this.editorChangeLog.push(change);
+        })*/
         // Restore the previous cursor position
-        this.editor.getEditor().moveCursorToPosition(this.fileSession[this.selectedFile].cursor);
-        this.editorMode = this.aceModeList.getModeForPath(this.selectedFile).name;
-        this.editor.setMode(this.editorMode);
-        this.editor.getEditor().resize();
-        this.editor.getEditor().focus();
+        //this.editor.getEditor().moveCursorToPosition(this.fileSession[this.selectedFile].cursor);
+        let line: number = this.fileSession[this.selectedFile].cursor.row;
+        let ch: number = this.fileSession[this.selectedFile].cursor.column;
+        this.codemirror.setCursor({ line, ch });
+        //this.editorMode = this.aceModeList.getModeForPath(this.selectedFile).name;
+        //this.editor.setMode(this.editorMode);
+        //this.editor.getEditor().resize();
+        //this.editor.getEditor().focus();
+        this.codemirror.focus();
         // Reset the undo stack after file change, otherwise the user can undo back to the old file
-        this.editor.getEditor().getSession().setUndoManager(new ace.UndoManager());
-        if (this.buildLogErrors) {
+        //this.editor.getEditor().getSession().setUndoManager(new ace.UndoManager());
+        this.codemirror.getDoc().clearHistory();
+        /*if (this.buildLogErrors) {
             this.editor.getEditor().getSession().setAnnotations(this.buildLogErrors.errors[this.selectedFile]);
+        }*/
+        if (this.buildLogErrors) {
+            this.buildLogErrors.errors[this.selectedFile].forEach(function (value) {
+                this.codemirror.setGutterMarker(value.row, 'breakpoints', this.codemirror.lineInfo() ? null : this.makeMarker());
+            });
         }
     }
 
@@ -181,8 +237,10 @@ export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestr
     onFileTextChanged(code: string) {
         /** Is the code different to what we have on our session? This prevents us from saving when a file is loaded **/
         if (this.selectedFile && this.fileSession[this.selectedFile].code !== code) {
-            const cursor = this.editor.getEditor().getCursorPosition();
-            this.fileSession[this.selectedFile] = { code, cursor };
+            //const cursor = this.editor.getEditor().getCursorPosition();
+            const cursor = this.codemirror.getCursor();
+            //this.fileSession[this.selectedFile] = { code, cursor };
+            this.fileSession[this.selectedFile] = { code, cursor: { column: cursor.line, row: cursor.ch } };
             if (this.buildLogErrors.errors[this.selectedFile]) {
                 this.buildLogErrors = {
                     ...this.buildLogErrors,
@@ -197,12 +255,12 @@ export class CodeEditorAceComponent implements AfterViewInit, OnChanges, OnDestr
         }
     }
 
-    ngOnDestroy() {
+    /*ngOnDestroy() {
         if (this.annotationChange) {
             this.annotationChange.unsubscribe();
         }
         if (this.resizeSubscription) {
             this.resizeSubscription.unsubscribe();
         }
-    }
+    }*/
 }

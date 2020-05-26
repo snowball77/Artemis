@@ -8,7 +8,7 @@
     </div>
 
     <div class="card-body code-editor-ace__content">
-        <ace-editor
+        <!-- <ace-editor
             #editor
             id="ace-code-editor"
             [mode]="editorMode"
@@ -19,7 +19,10 @@
             (textChanged)="onFileTextChanged($event)"
             class="code-editor-ace__content__editor"
         >
-        </ace-editor>
+        </ace-editor>-->
+        <div style="height: 100%;">
+            <textarea id="editor-textarea"></textarea>
+        </div>
         <p
             *ngIf="!selectedFile && !isLoading"
             id="no-file-selected"
