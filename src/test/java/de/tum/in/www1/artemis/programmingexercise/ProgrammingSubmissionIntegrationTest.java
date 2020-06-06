@@ -260,6 +260,23 @@ public class ProgrammingSubmissionIntegrationTest extends AbstractSpringIntegrat
     }
 
     @Test
+    @WithMockUser(username = "instructoralt1", roles = "INSTRUCTOR")
+    public void triggerFailedBuild_instructorNotInCourse_forbidden() throws Exception {
+        database.addInstructor("other-instructors", "instructoralt");
+        var submission = new ProgrammingSubmission();
+        submission = database.addProgrammingSubmission(exercise, submission, "student1");
+        final var participation = programmingExerciseStudentParticipationRepository.findById(submission.getParticipation().getId()).get();
+        request.postWithoutLocation("/api" + Constants.PROGRAMMING_SUBMISSION_RESOURCE_PATH + participation.getId() + "/trigger-failed-build", null, HttpStatus.FORBIDDEN, null);
+    }
+
+    @Test
+    @WithMockUser(username = "student1", roles = "USER")
+    public void triggerFailedBuild_noSubmission_badRequest() throws Exception {
+        StudentParticipation participation = database.addStudentParticipationForProgrammingExercise(exercise, "student1");
+        request.postWithoutLocation("/api" + Constants.PROGRAMMING_SUBMISSION_RESOURCE_PATH + participation.getId() + "/trigger-failed-build", null, HttpStatus.BAD_REQUEST, null);
+    }
+
+    @Test
     @WithMockUser(username = "student1", roles = "USER")
     public void getAlllProgrammingSubmissions_asUser_forbidden() throws Exception {
         request.get("/api/exercises/" + exercise.getId() + "/programming-submissions", HttpStatus.FORBIDDEN, String.class);
