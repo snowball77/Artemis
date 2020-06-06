@@ -364,6 +364,21 @@ public class ProgrammingSubmissionIntegrationTest extends AbstractSpringIntegrat
 
     @Test
     @WithMockUser(username = "tutor1", roles = "TA")
+    public void testgetProgrammingSubmissionWithoutAssessment_emptySubmissions_notFound() throws Exception {
+        exercise.setBuildAndTestStudentSubmissionsAfterDueDate(ZonedDateTime.now().minusDays(1));
+        programmingExerciseRepository.saveAndFlush(exercise);
+        request.get("/api/exercises/" + exercise.getId() + "/programming-submission-without-assessment", HttpStatus.NOT_FOUND, ProgrammingSubmission.class);
+    }
+
+    @Test
+    @WithMockUser(username = "instructoralt1", roles = "INSTRUCTOR")
+    public void testGetProgrammingSubmissionWithoutAssessment_instructorNotInCourse_forbidden() throws Exception {
+        database.addInstructor("other-instructors", "instructoralt");
+        request.get("/api/exercises/" + exercise.getId() + "/programming-submission-without-assessment", HttpStatus.FORBIDDEN, ProgrammingSubmission.class);
+    }
+
+    @Test
+    @WithMockUser(username = "tutor1", roles = "TA")
     public void getProgrammingSubmissionWithoutAssessment_dueDateNotPassedYet_notFound() throws Exception {
         exercise.setBuildAndTestStudentSubmissionsAfterDueDate(ZonedDateTime.now().plusDays(1));
         programmingExerciseRepository.saveAndFlush(exercise);
