@@ -253,6 +253,23 @@ public class ProgrammingSubmissionIntegrationTest extends AbstractSpringIntegrat
     }
 
     @Test
+    @WithMockUser(username = "instructor", roles = "INSTRUCTOR")
+    void testTriggerBuildForParticipations_emptyParticipationSet_badRequest() throws Exception {
+        request.postWithoutLocation("/api/programming-exercises/" + 1L + "/trigger-instructor-build", new ArrayList<>(), HttpStatus.BAD_REQUEST, new HttpHeaders());
+    }
+
+    @Test
+    @WithMockUser(username = "instructoralt1", roles = "INSTRUCTOR")
+    void testTriggerBuildForParticipations_emptyParticipationSet_forbidden() throws Exception {
+        database.addInstructor("other-instructors", "instructoralt");
+        String login1 = "student1";
+        ProgrammingExerciseStudentParticipation participation1 = database.addStudentParticipationForProgrammingExercise(exercise, login1);
+        List<Long> participationsToTrigger = new ArrayList<>(Arrays.asList(participation1.getId()));
+        request.postWithoutLocation("/api/programming-exercises/" + exercise.getId() + "/trigger-instructor-build", participationsToTrigger, HttpStatus.FORBIDDEN,
+                new HttpHeaders());
+    }
+
+    @Test
     @WithMockUser(username = "student1", roles = "USER")
     public void triggerFailedBuild_resultPresentInCI_ok() throws Exception {
         var submission = new ProgrammingSubmission();
