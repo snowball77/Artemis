@@ -25,6 +25,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import de.tum.in.www1.artemis.AbstractSpringIntegrationBambooBitbucketJiraTest;
 import de.tum.in.www1.artemis.config.Constants;
 import de.tum.in.www1.artemis.connector.bamboo.BambooRequestMockProvider;
+import de.tum.in.www1.artemis.domain.Course;
 import de.tum.in.www1.artemis.domain.ProgrammingExercise;
 import de.tum.in.www1.artemis.domain.ProgrammingSubmission;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
@@ -102,6 +103,15 @@ public class ProgrammingSubmissionIntegrationTest extends AbstractSpringIntegrat
         assertThat(submission.getResult()).isNull();
         assertThat(submission.isSubmitted()).isTrue();
         assertThat(submission.getType()).isEqualTo(SubmissionType.MANUAL);
+    }
+
+    @Test
+    @WithMockUser(username = "student1", roles = "USER")
+    public void testTriggerBuild_invalidParticipation_notFound() throws Exception {
+        Course course = database.addCourseWithOneModelingExercise();
+        var modelingExercise = course.getExercises().iterator().next();
+        StudentParticipation participation = database.addParticipationForExercise(modelingExercise, "student1");
+        request.postWithoutLocation("/api" + Constants.PROGRAMMING_SUBMISSION_RESOURCE_PATH + participation.getId() + "/trigger-build", null, HttpStatus.NOT_FOUND, null);
     }
 
     @Test
@@ -261,7 +271,7 @@ public class ProgrammingSubmissionIntegrationTest extends AbstractSpringIntegrat
 
     @Test
     @WithMockUser(username = "instructoralt1", roles = "INSTRUCTOR")
-    public void triggerFailedBuild_instructorNotInCourse_forbidden() throws Exception {
+    public void testTriggerFailedBuild_instructorNotInCourse_forbidden() throws Exception {
         database.addInstructor("other-instructors", "instructoralt");
         var submission = new ProgrammingSubmission();
         submission = database.addProgrammingSubmission(exercise, submission, "student1");
@@ -271,9 +281,18 @@ public class ProgrammingSubmissionIntegrationTest extends AbstractSpringIntegrat
 
     @Test
     @WithMockUser(username = "student1", roles = "USER")
-    public void triggerFailedBuild_noSubmission_badRequest() throws Exception {
+    public void testTriggerFailedBuild_noSubmission_badRequest() throws Exception {
         StudentParticipation participation = database.addStudentParticipationForProgrammingExercise(exercise, "student1");
         request.postWithoutLocation("/api" + Constants.PROGRAMMING_SUBMISSION_RESOURCE_PATH + participation.getId() + "/trigger-failed-build", null, HttpStatus.BAD_REQUEST, null);
+    }
+
+    @Test
+    @WithMockUser(username = "student1", roles = "USER")
+    public void testTriggerFailedBuild_invalidParticipation_notFound() throws Exception {
+        Course course = database.addCourseWithOneModelingExercise();
+        var modelingExercise = course.getExercises().iterator().next();
+        StudentParticipation participation = database.addParticipationForExercise(modelingExercise, "student1");
+        request.postWithoutLocation("/api" + Constants.PROGRAMMING_SUBMISSION_RESOURCE_PATH + participation.getId() + "/trigger-failed-build", null, HttpStatus.NOT_FOUND, null);
     }
 
     @Test
