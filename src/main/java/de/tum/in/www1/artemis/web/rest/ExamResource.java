@@ -103,9 +103,15 @@ public class ExamResource {
                 .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getTitle())).body(examResponseDTO);
     }
 
-    @GetMapping("/exams/{examId}")
-    @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
-    public ResponseEntity<ExamResponseDTO> getExam(@PathVariable Long examId) {
+    @GetMapping("/courses/{courseId}/exams/{examId}")
+    @PreAuthorize("hasAnyRole('USER','TA','INSTRUCTOR','ADMIN')")
+    public ResponseEntity<ExamResponseDTO> getExam(@PathVariable Long examId, @PathVariable Long courseId) {
+        User user = userService.getUserWithGroupsAndAuthorities();
+        Course course = courseService.findOne(courseId);
+        if (!authCheckService.isAtLeastStudentInCourse(course, user)) {
+            return forbidden();
+        }
+
         Optional<Exam> exam = examRepository.findById(examId);
         if (exam.isPresent()) {
             return ResponseEntity.ok().body(examMapper.examToExamResponseDto(exam.get()));
