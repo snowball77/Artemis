@@ -2,6 +2,8 @@ package de.tum.in.www1.artemis.web.rest.dto.request;
 
 import java.time.ZonedDateTime;
 
+import javax.validation.constraints.NotBlank;
+
 import de.tum.in.www1.artemis.validation.constraints.ExamRequestConstraint;
 
 @ExamRequestConstraint
@@ -9,6 +11,7 @@ public class ExamRequestDTO {
 
     public Long id;
 
+    @NotBlank
     public String title;
 
     public ZonedDateTime visibleDate;
