@@ -94,7 +94,6 @@ public class ExamResource {
             return forbidden();
         }
         Exam exam = examMapper.examRequestDtoToExam(examRequestDTO);
-        course.addExam(exam);
         Exam result = examService.save(exam);
 
         ExamResponseDTO examResponseDTO = examMapper.examToExamResponseDto(exam);
