@@ -13,6 +13,9 @@ public class ExamRequestValidator implements ConstraintValidator<ExamRequestCons
         if (examRequestDTO.visibleDate != null && examRequestDTO.startDate != null && examRequestDTO.endDate != null) {
             return examRequestDTO.visibleDate.isBefore(examRequestDTO.startDate) && examRequestDTO.startDate.isBefore(examRequestDTO.endDate);
         }
+        else {
+            return true;
+        }
     }
 
 }
