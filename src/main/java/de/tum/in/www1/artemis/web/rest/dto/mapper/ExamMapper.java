@@ -7,12 +7,15 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
 import de.tum.in.www1.artemis.domain.exam.Exam;
+import de.tum.in.www1.artemis.web.rest.dto.request.ExamRequestDTO;
 import de.tum.in.www1.artemis.web.rest.dto.response.ExamResponseDTO;
 
 @Mapper(componentModel = "spring")
 public interface ExamMapper {
 
     ExamResponseDTO examToExamResponseDto(Exam exam);
+
+    Exam examRequestDtoToExam(ExamRequestDTO examRequestDTO);
 
     @AfterMapping
     default void calculateDuration(Exam exam, @MappingTarget ExamResponseDTO result) {

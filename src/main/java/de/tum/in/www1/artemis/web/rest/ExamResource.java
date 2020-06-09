@@ -6,6 +6,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
+import javax.validation.Valid;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +30,7 @@ import de.tum.in.www1.artemis.service.CourseService;
 import de.tum.in.www1.artemis.service.ExamService;
 import de.tum.in.www1.artemis.service.UserService;
 import de.tum.in.www1.artemis.web.rest.dto.mapper.ExamMapper;
+import de.tum.in.www1.artemis.web.rest.dto.request.ExamRequestDTO;
 import de.tum.in.www1.artemis.web.rest.dto.response.ExamResponseDTO;
 import de.tum.in.www1.artemis.web.rest.errors.BadRequestAlertException;
 import de.tum.in.www1.artemis.web.rest.util.HeaderUtil;
@@ -72,16 +75,16 @@ public class ExamResource {
     /**
      * POST /courses/{courseId}/exams : Create a new exam.
      *
-     * @param courseId  the course to which the exam belongs
-     * @param exam      the exam to create
+     * @param courseId the course to which the exam belongs
+     * @param exam     the exam to create
      * @return the ResponseEntity with status 201 (Created) and with body the new exam, or with status 400 (Bad Request) if the exam has already an ID
      * @throws URISyntaxException if the Location URI syntax is incorrect
      */
     @PostMapping("/courses/{courseId}/exams")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
-    public ResponseEntity<Exam> createExam(@PathVariable Long courseId, @RequestBody Exam exam) throws URISyntaxException {
-        log.debug("REST request to create an exam : {}", exam);
-        if (exam.getId() != null) {
+    public ResponseEntity<ExamResponseDTO> createExam(@PathVariable Long courseId, @Valid @RequestBody ExamRequestDTO examRequestDTO) throws URISyntaxException {
+        log.debug("REST request to create an exam : {}", examRequestDTO);
+        if (examRequestDTO.id != null) {
             throw new BadRequestAlertException("A new exam cannot already have an ID", ENTITY_NAME, "idexists");
         }
 
@@ -90,10 +93,14 @@ public class ExamResource {
         if (!authCheckService.isAtLeastInstructorInCourse(course, user)) {
             return forbidden();
         }
-
+        Exam exam = examMapper.examRequestDtoToExam(examRequestDTO);
+        course.addExam(exam);
         Exam result = examService.save(exam);
-        return ResponseEntity.created(new URI("/api/courses/" + courseId + "/exams/" + result.getId()))
-                .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getTitle())).body(result);
+
+        ExamResponseDTO examResponseDTO = examMapper.examToExamResponseDto(exam);
+
+        return ResponseEntity.created(new URI("/api/courses/" + courseId + "/exams/" + examResponseDTO.id))
+                .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getTitle())).body(examResponseDTO);
     }
 
     @GetMapping("/exams/{examId}")
@@ -118,9 +125,9 @@ public class ExamResource {
      */
     @PutMapping("/courses/{courseId}/exams")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
-    public ResponseEntity<Exam> updateExam(@PathVariable Long courseId, @RequestBody Exam updatedExam) throws URISyntaxException {
+    public ResponseEntity<ExamResponseDTO> updateExam(@PathVariable Long courseId, @RequestBody ExamRequestDTO updatedExam) throws URISyntaxException {
         log.debug("REST request to update an exam : {}", updatedExam);
-        if (updatedExam.getId() == null) {
+        if (updatedExam.id == null) {
             return createExam(courseId, updatedExam);
         }
 
@@ -130,12 +137,13 @@ public class ExamResource {
             return forbidden();
         }
 
-        Optional<Exam> existingExam = examRepository.findById(updatedExam.getId());
+        Optional<Exam> existingExam = examRepository.findById(updatedExam.id);
         if (existingExam.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        Exam result = examService.save(updatedExam);
-        return ResponseEntity.ok().headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, result.getTitle())).body(result);
+        Exam result = examService.save(examMapper.examRequestDtoToExam(updatedExam));
+        return ResponseEntity.ok().headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, result.getTitle()))
+                .body(examMapper.examToExamResponseDto(result));
     }
 }
