@@ -186,4 +186,17 @@ public class QuizSubmissionResource {
 
         return ResponseEntity.ok(result);
     }
+
+    // TODO: Coordinate route with client team
+    @PutMapping("exercises/{exerciseId}/quiz-submissions/exam")
+    public ResponseEntity<QuizSubmission> submitForExam(@PathVariable Long exerciseId, @RequestBody QuizSubmission quizSubmission, Principal principal) {
+        log.debug("REST request to save QuizSubmission for exam : {}", quizSubmission);
+        try {
+            return ResponseEntity.ok(quizSubmissionService.saveSubmissionForExamMode(exerciseId, quizSubmission, principal.getName()));
+        }
+        catch (QuizSubmissionException e) {
+            log.warn("QuizSubmissionException :" + e.getMessage() + " for user " + principal.getName() + " in quiz " + exerciseId);
+            return ResponseEntity.badRequest().headers(HeaderUtil.createFailureAlert(applicationName, true, ENTITY_NAME, "quizSubmissionError", e.getMessage())).body(null);
+        }
+    }
 }

@@ -13,7 +13,9 @@ import de.tum.in.www1.artemis.domain.Result;
 import de.tum.in.www1.artemis.domain.SubmittedAnswer;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
 import de.tum.in.www1.artemis.domain.enumeration.SubmissionType;
+import de.tum.in.www1.artemis.domain.participation.Participant;
 import de.tum.in.www1.artemis.domain.participation.Participation;
+import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.domain.quiz.QuizSubmission;
 import de.tum.in.www1.artemis.exception.QuizSubmissionException;
@@ -34,9 +36,12 @@ public class QuizSubmissionService {
 
     private ParticipationService participationService;
 
-    public QuizSubmissionService(QuizSubmissionRepository quizSubmissionRepository, ResultRepository resultRepository) {
+    private UserService userService;
+
+    public QuizSubmissionService(QuizSubmissionRepository quizSubmissionRepository, ResultRepository resultRepository, UserService userService) {
         this.quizSubmissionRepository = quizSubmissionRepository;
         this.resultRepository = resultRepository;
+        this.userService = userService;
     }
 
     @Autowired
@@ -166,6 +171,71 @@ public class QuizSubmissionService {
         // save submission to HashMap
         QuizScheduleService.updateSubmission(exerciseId, username, quizSubmission);
 
+        log.info(logText + "Saved quiz submission for user {} in quiz {} after {} µs ", username, exerciseId, (System.nanoTime() - start) / 1000);
+        return quizSubmission;
+    }
+
+    /**
+     * Saves a quiz submission into the database for exam quizzes.
+     *
+     * @param exerciseId the exerciseID to the corresponding QuizExercise
+     * @param quizSubmission the submission which should be saved
+     * @param username the username of the user who has initiated the request
+     *
+     * @return the updated quiz submission object
+     * @throws QuizSubmissionException handles errors, e.g. when the exam quiz has already ended
+     */
+    public QuizSubmission saveSubmissionForExamMode(Long exerciseId, QuizSubmission quizSubmission, String username) throws QuizSubmissionException {
+        String logText = "save quiz in exam mode:";
+
+        long start = System.nanoTime();
+        Optional<QuizExercise> optionalQuizExercise = quizExerciseService.findById(exerciseId);
+        if (optionalQuizExercise.isEmpty()) {
+            log.warn(logText + "Could not execute for user {} in quiz {} because the quizExercise could not be found.", username, exerciseId);
+            throw new QuizSubmissionException("The quiz could not be found");
+        }
+
+        QuizExercise quizExercise = optionalQuizExercise.get();
+        log.debug(logText + "Received quiz exercise for user {} in quiz {} in {} µs.", username, exerciseId, (System.nanoTime() - start) / 1000);
+        // check if submission is still allowed
+        if (!quizExercise.isSubmissionAllowed()) {
+            throw new QuizSubmissionException("The quiz is not active");
+        }
+
+        StudentParticipation studentParticipation;
+        Optional<StudentParticipation> optionalStudentParticipation = participationService.findOneByExerciseAndStudentLoginWithEagerSubmissionsAnyState(quizExercise, username);
+        if (optionalStudentParticipation.isEmpty()) {
+            // This should not happen as we created the participations before the quiz started, fallback: create now
+            log.warn(logText + "Participation for user {} in quiz {} was not found, creating now", username, exerciseId);
+            Participant participant = userService.getUserWithGroupsAndAuthorities();
+            participationService.startExercise(quizExercise, participant);
+            studentParticipation = participationService.findOneByExerciseAndStudentLoginWithEagerSubmissionsAnyState(quizExercise, username).get();
+        }
+        else {
+            studentParticipation = optionalStudentParticipation.get();
+        }
+
+        if (studentParticipation.getSubmissions().isEmpty()) {
+            // This should not happen as we initialized the participation with one submission, fallback: add now
+        }
+        else {
+            // New submission gets id of old submission that was stored in database
+            quizSubmission.setId(studentParticipation.getSubmissions().iterator().next().getId());
+        }
+
+        // Note: If there is already a submission with the same id, it will get overridden
+        studentParticipation.getSubmissions().add(quizSubmission);
+        quizSubmission.setParticipation(studentParticipation);
+
+        // recreate pointers back to submission in each submitted answer
+        for (SubmittedAnswer submittedAnswer : quizSubmission.getSubmittedAnswers()) {
+            submittedAnswer.setSubmission(quizSubmission);
+        }
+
+        // set submission date
+        quizSubmission.setSubmissionDate(ZonedDateTime.now());
+
+        quizSubmission = quizSubmissionRepository.save(quizSubmission);
         log.info(logText + "Saved quiz submission for user {} in quiz {} after {} µs ", username, exerciseId, (System.nanoTime() - start) / 1000);
         return quizSubmission;
     }

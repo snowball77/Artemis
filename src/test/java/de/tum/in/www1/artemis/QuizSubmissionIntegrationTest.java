@@ -15,8 +15,11 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import de.tum.in.www1.artemis.domain.Course;
 import de.tum.in.www1.artemis.domain.Result;
+import de.tum.in.www1.artemis.domain.User;
+import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.domain.quiz.*;
 import de.tum.in.www1.artemis.repository.*;
+import de.tum.in.www1.artemis.service.ParticipationService;
 import de.tum.in.www1.artemis.service.QuizExerciseService;
 import de.tum.in.www1.artemis.service.scheduled.QuizScheduleService;
 import de.tum.in.www1.artemis.util.DatabaseUtilService;
@@ -42,6 +45,9 @@ public class QuizSubmissionIntegrationTest extends AbstractSpringIntegrationBamb
 
     @Autowired
     QuizScheduleService quizScheduleService;
+
+    @Autowired
+    ParticipationService participationService;
 
     @Autowired
     QuizSubmissionWebsocketService quizSubmissionWebsocketService;
@@ -388,6 +394,107 @@ public class QuizSubmissionIntegrationTest extends AbstractSpringIntegrationBamb
             assertThat(question.getQuizQuestionStatistic().getParticipantsUnrated()).isEqualTo(0);
             assertThat(question.getQuizQuestionStatistic().getParticipantsRated()).isEqualTo(0);
         }
+    }
+
+    @Test
+    @WithMockUser(value = "student1", roles = "USER")
+    public void testQuizSaveExamMode() throws Exception {
+        List<Course> courses = database.createCoursesWithExercisesAndLectures(false);
+        Course course = courses.get(0);
+        courseRepository.save(course);
+        QuizExercise quizExercise = database.createQuiz(course, ZonedDateTime.now().minusSeconds(4), null);
+        quizExercise = quizExerciseService.save(quizExercise);
+        User user = database.getUserByLogin("student1");
+        participationService.startExercise(quizExercise, user);
+        StudentParticipation studentParticipation = participationService.findOneByExerciseAndStudentLoginWithEagerSubmissionsAnyState(quizExercise, "student1").get();
+
+        QuizSubmission quizSubmission = new QuizSubmission();
+        quizSubmission.setParticipation(studentParticipation);
+
+        MultipleChoiceQuestion multipleChoiceQuestion = (MultipleChoiceQuestion) quizExercise.getQuizQuestions().stream().filter(q -> q instanceof MultipleChoiceQuestion)
+                .findFirst().get();
+
+        MultipleChoiceSubmittedAnswer submittedAnswerBeforeCall = (MultipleChoiceSubmittedAnswer) new MultipleChoiceSubmittedAnswer()
+                .addSelectedOptions(multipleChoiceQuestion.getAnswerOptions().get(0)).question(multipleChoiceQuestion);
+        quizSubmission.addSubmittedAnswers(submittedAnswerBeforeCall);
+
+        quizSubmission = quizSubmissionRepository.save(quizSubmission);
+
+        // Before the call, only answer option 1 should be selected
+        assertThat(submittedAnswerBeforeCall.isSelected(multipleChoiceQuestion.getAnswerOptions().get(0))).isTrue();
+        assertThat(submittedAnswerBeforeCall.isSelected(multipleChoiceQuestion.getAnswerOptions().get(1))).isFalse();
+
+        studentParticipation.addSubmissions(quizSubmission);
+        participationRepository.save(studentParticipation);
+
+        QuizSubmission newQuizSubmission = new QuizSubmission();
+        MultipleChoiceSubmittedAnswer submittedAnswerAfterCall = (MultipleChoiceSubmittedAnswer) new MultipleChoiceSubmittedAnswer()
+                .addSelectedOptions(multipleChoiceQuestion.getAnswerOptions().get(1)).question(multipleChoiceQuestion);
+
+        newQuizSubmission.addSubmittedAnswers(submittedAnswerAfterCall);
+
+        QuizSubmission savedQuizSubmission = request.putWithResponseBody("/api/exercises/" + quizExercise.getId() + "/quiz-submissions/exam", newQuizSubmission,
+                QuizSubmission.class, HttpStatus.OK);
+
+        assertThat(savedQuizSubmission.getSubmittedAnswers().size()).isEqualTo(1);
+        submittedAnswerAfterCall = (MultipleChoiceSubmittedAnswer) savedQuizSubmission.getSubmittedAnswerForQuestion(multipleChoiceQuestion);
+        // After the call, only answer option 2 should be selected
+        assertThat(submittedAnswerAfterCall.isSelected(multipleChoiceQuestion.getAnswerOptions().get(0))).isFalse();
+        assertThat(submittedAnswerAfterCall.isSelected(multipleChoiceQuestion.getAnswerOptions().get(1))).isTrue();
+
+    }
+
+    @Test
+    @WithMockUser(value = "student1", roles = "USER")
+    public void testQuizSaveExamMode_noSubmissionExists() throws Exception {
+        List<Course> courses = database.createCoursesWithExercisesAndLectures(false);
+        Course course = courses.get(0);
+        courseRepository.save(course);
+        QuizExercise quizExercise = database.createQuiz(course, ZonedDateTime.now().minusSeconds(4), null);
+        quizExerciseService.save(quizExercise);
+        User user = database.getUserByLogin("student1");
+        participationService.startExercise(quizExercise, user);
+        StudentParticipation studentParticipation = participationService.findOneByExerciseAndStudentLoginWithEagerSubmissionsAnyState(quizExercise, "student1").get();
+
+        participationRepository.save(studentParticipation);
+
+        request.putWithResponseBody("/api/exercises/" + quizExercise.getId() + "/quiz-submissions/exam", new QuizSubmission(), QuizSubmission.class, HttpStatus.OK);
+    }
+
+    @Test
+    @WithMockUser(value = "student1", roles = "USER")
+    public void testQuizSaveExamMode_noParticipationExists() throws Exception {
+        List<Course> courses = database.createCoursesWithExercisesAndLectures(false);
+        Course course = courses.get(0);
+        courseRepository.save(course);
+        QuizExercise quizExercise = database.createQuiz(course, ZonedDateTime.now().minusSeconds(4), null);
+        quizExerciseService.save(quizExercise);
+
+        request.putWithResponseBody("/api/exercises/" + quizExercise.getId() + "/quiz-submissions/exam", new QuizSubmission(), QuizSubmission.class, HttpStatus.OK);
+    }
+
+    @Test
+    @WithMockUser(value = "student1", roles = "USER")
+    public void testQuizSaveExamMode_invalidExerciseId() throws Exception {
+        List<Course> courses = database.createCoursesWithExercisesAndLectures(false);
+        Course course = courses.get(0);
+        courseRepository.save(course);
+        QuizExercise quizExercise = database.createQuiz(course, ZonedDateTime.now().minusSeconds(4), null);
+        quizExerciseService.save(quizExercise);
+
+        request.putWithResponseBody("/api/exercises/" + (quizExercise.getId() + 1) + "/quiz-submissions/exam", new QuizSubmission(), QuizSubmission.class, HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    @WithMockUser(value = "student1", roles = "USER")
+    public void testQuizSaveExamMode_over() throws Exception {
+        List<Course> courses = database.createCoursesWithExercisesAndLectures(false);
+        Course course = courses.get(0);
+        courseRepository.save(course);
+        QuizExercise quizExercise = database.createQuiz(course, ZonedDateTime.now().minusSeconds(30), ZonedDateTime.now().minusSeconds(15));
+        quizExerciseService.save(quizExercise);
+
+        request.putWithResponseBody("/api/exercises/" + quizExercise.getId() + "/quiz-submissions/exam", new QuizSubmission(), QuizSubmission.class, HttpStatus.BAD_REQUEST);
     }
 
 }
