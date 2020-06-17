@@ -1,5 +1,11 @@
 <jhi-exam-participation-cover [startView]="true" [exam]="exam" *ngIf="isVisible() && !isOver()"></jhi-exam-participation-cover>
 <jhi-exam-participation-summary *ngIf="isVisible() && isOver()"></jhi-exam-participation-summary>
+<!-- exercises -->
+<ng-container [ngSwitch]="">
+    <!-- quiz exercise -->
+</ng-container>
+
+<!-- connection status footer -->
 <div *ngIf="!disconnected" class="exam-footer connected">
     <div class="container">
         <div class="exam-footer-content">
