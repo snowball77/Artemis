@@ -1,1 +1,68 @@
-TODO
+<div class="row justify-content-center">
+    <div class="col-8">
+        <div *ngIf="exam">
+            <div>
+                <jhi-secured-image *ngIf="exam.course.courseIcon" [src]="exam.course.courseIcon" [cachingStrategy]="CachingStrategy.LOCAL_STORAGE"> </jhi-secured-image>
+                <h2><span jhiTranslate="artemisApp.examDetail.exam">Exam</span> {{ exam.id }}</h2>
+            </div>
+            <hr />
+            <jhi-alert></jhi-alert>
+            <jhi-alert-error></jhi-alert-error>
+            <dl class="row-md jh-entity-details">
+                <dt><span jhiTranslate="artemisApp.examDetail.course">Course</span></dt>
+                <dd>
+                    <a [routerLink]="['/course-management', exam.course.id, 'view']">{{ exam.course.title }}</a>
+                </dd>
+                <dt><span jhiTranslate="artemisApp.examDetail.title">Title</span></dt>
+                <dd>
+                    <span>{{ exam.title }}</span>
+                </dd>
+                <dt><span jhiTranslate="artemisApp.examDetail.startDate">Start Date</span></dt>
+                <dd>
+                    <span>{{ exam.startDate | artemisDate }}</span>
+                </dd>
+                <dt><span jhiTranslate="artemisApp.examDetail.endDate">End Date</span></dt>
+                <dd>
+                    <span>{{ exam.endDate | artemisDate }}</span>
+                </dd>
+                <dt *ngIf="exam.registeredUsers"><span jhiTranslate="artemisApp.examDetail.registeredUsers">Registered Users</span></dt>
+                <dd *ngIf="exam.registeredUsers">
+                    <span>{{ exam.registeredUsers?.length }}</span>
+                </dd>
+                <dt *ngIf="exam.maxPoints"><span jhiTranslate="artemisApp.examDetail.maxPoints">Maximum points</span></dt>
+                <dd *ngIf="exam.maxPoints">
+                    <span>{{ exam.maxPoints }}</span>
+                </dd>
+                <dt><span jhiTranslate="artemisApp.examDetail.exerciseGroup">Exercise Group</span></dt>
+                <dd>
+                    <div *ngFor="let exerciseGroup in exam.exerciseGroups">
+                        <span>{{ exerciseGroup?.title }}</span>
+                        <div *ngFor="let exercise in exerciseGroup">
+                            <span>{{ exercise.title }}, {{ exercise.exerciseType }}</span>
+                        </div>
+                    </div>
+                </dd>
+                <ng-container *ngFor="let exerciseGroup in exam.exerciseGroups">
+                    <dt><span jhiTranslate="artemisApp.examDetail.exerciseGroup">Exercise Group</span></dt>
+                    <dd>
+                        <span>{{ exerciseGroup?.title }}</span>
+                    </dd>
+                    <ng-container *ngFor="let exercise in exerciseGroup">
+                        <dt><span jhiTranslate="artemisApp.examDetail.exercise">Exercise</span></dt>
+                        <dd>
+                            <span>{{ exercise.title }}, {{ exercise.exerciseType }}</span>
+                        </dd>
+                    </ng-container>
+                </ng-container>
+            </dl>
+
+            <button type="submit" (click)="previousState()" class="btn btn-info mr-1">
+                <fa-icon [icon]="'arrow-left'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.back">Back</span>
+            </button>
+
+            <button type="button" [routerLink]="['/course-management', exam.course.id, 'exams', exam.id, 'edit']" class="btn btn-primary mr-1">
+                <fa-icon [icon]="'pencil-alt'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.edit">Edit</span>
+            </button>
+        </div>
+    </div>
+</div>

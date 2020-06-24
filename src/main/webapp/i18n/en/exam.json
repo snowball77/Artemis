@@ -141,6 +141,17 @@
             "openSubmission": "Open Submission",
             "openAssessment": " Open Assessment",
             "cancelAssessment": " Cancel Assessment"
+        },
+        "examDetail": {
+            "exam": "Exam",
+            "course": "Course",
+            "title": "Title",
+            "startDate": "Start date",
+            "endDate": "End date",
+            "maxPoints": "Maximum points",
+            "registeredUsers": "Registered users",
+            "exerciseGroup": "Exercise group",
+            "exercise": "Exercise"
         }
     }
 }
