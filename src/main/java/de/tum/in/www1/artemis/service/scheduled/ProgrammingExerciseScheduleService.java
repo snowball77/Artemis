@@ -356,24 +356,12 @@ public class ProgrammingExerciseScheduleService implements IExerciseScheduleServ
         }
         List<ProgrammingExerciseStudentParticipation> failedOperations = new LinkedList<>();
 
-        int index = 0;
         for (StudentParticipation studentParticipation : programmingExercise.get().getStudentParticipations()) {
             ProgrammingExerciseStudentParticipation programmingExerciseStudentParticipation = (ProgrammingExerciseStudentParticipation) studentParticipation;
 
             // ignore all participations that don't fulfill the condition
             if (!condition.test(programmingExerciseStudentParticipation)) {
                 continue;
-            }
-
-            // Execute requests in batches instead all at once.
-            if (index > 0 && index % EXTERNAL_SYSTEM_REQUEST_BATCH_SIZE == 0) {
-                try {
-                    log.info("Sleep for {}s during invokeOperationOnAllParticipationsThatSatisfy", EXTERNAL_SYSTEM_REQUEST_BATCH_WAIT_TIME_MS / 1000);
-                    Thread.sleep(EXTERNAL_SYSTEM_REQUEST_BATCH_WAIT_TIME_MS);
-                }
-                catch (InterruptedException ex) {
-                    log.error("Exception encountered when pausing during '" + operationName + "' for exercise " + programmingExerciseId, ex);
-                }
             }
 
             try {
@@ -384,7 +372,6 @@ public class ProgrammingExerciseScheduleService implements IExerciseScheduleServ
                         + studentParticipation.getId(), e);
                 failedOperations.add(programmingExerciseStudentParticipation);
             }
-            index++;
         }
         return failedOperations;
     }
