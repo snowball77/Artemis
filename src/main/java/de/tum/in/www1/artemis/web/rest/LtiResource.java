@@ -84,7 +84,7 @@ public class LtiResource {
     public void launch(@ModelAttribute LtiLaunchRequestDTO launchRequest, @PathVariable("exerciseId") Long exerciseId, HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        log.debug("/lti/launch/" + exerciseId + " with launch request: " + launchRequest);
+        log.info("/lti/launch/" + exerciseId + " with launch request: " + launchRequest);
 
         if (this.LTI_OAUTH_SECRET.isEmpty() || this.LTI_ID.isEmpty() || this.LTI_OAUTH_KEY.isEmpty()) {
             String message = "LTI not configured on this Artemis server. Cannot launch exercise " + exerciseId + ". " + "Please contact an admin or try again.";
@@ -98,7 +98,7 @@ public class LtiResource {
                     + "X-Forwarded-Proto and forward-headers-strategy: native");
         }
 
-        log.debug("Try to verify LTI Oauth Request");
+        log.info("Try to verify LTI Oauth Request");
 
         // Verify request
         String error = ltiService.verifyRequest(request);
@@ -108,7 +108,7 @@ public class LtiResource {
             return;
         }
 
-        log.debug("Oauth Verification succeeded");
+        log.info("Oauth Verification succeeded");
 
         // Check if exercise ID is valid
         Optional<Exercise> optionalExercise = exerciseRepository.findById(exerciseId);
@@ -118,7 +118,7 @@ public class LtiResource {
         }
 
         Exercise exercise = optionalExercise.get();
-        log.debug("found exercise " + exercise.getTitle());
+        log.info("found exercise " + exercise.getTitle());
         // Handle the launch request using LtiService
         try {
             ltiService.handleLaunchRequest(launchRequest, exercise);
@@ -129,19 +129,19 @@ public class LtiResource {
             return;
         }
 
-        log.debug("handleLaunchRequest done");
+        log.info("handleLaunchRequest done");
 
         // If the current user was created within the last 15 seconds, we just created the user
         // Display a welcome message to the user
         boolean isNewUser = SecurityUtils.isAuthenticated()
                 && TimeUnit.SECONDS.toMinutes(ZonedDateTime.now().toEpochSecond() - userService.getUser().getCreatedDate().toEpochMilli() * 1000) < 15;
 
-        log.debug("isNewUser: " + isNewUser);
+        log.info("isNewUser: " + isNewUser);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String jwt = tokenProvider.createToken(authentication, true);
 
-        log.debug("created jwt token: " + jwt);
+        log.info("created jwt token: " + jwt);
 
         // Note: The following redirect URL has to match the URL in user-route-access-service.ts in the method canActivate(...)
 
@@ -152,7 +152,7 @@ public class LtiResource {
                 + exercise.getCourseViaExerciseGroupOrCourseMember().getId() + "/exercises/" + exercise.getId() + (isNewUser ? "?welcome" : "")
                 + (!SecurityUtils.isAuthenticated() ? "?login" : "") + (isNewUser || !SecurityUtils.isAuthenticated() ? "&" : "") + "jwt=" + jwt;
 
-        log.debug("redirect to url: " + redirectUrl);
+        log.info("redirect to url: " + redirectUrl);
         response.sendRedirect(redirectUrl);
     }
 
