@@ -393,6 +393,7 @@ public class LtiService {
             return "Lti signature verification failed; " + e.getMessage();
         }
         // this is the success case
+        log.debug("LTI Oauth Request Verification successful");
         return null;
     }
 
