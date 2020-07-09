@@ -1,14 +1,10 @@
 package de.tum.in.www1.artemis.web.rest;
 
-import static de.tum.in.www1.artemis.config.Constants.EXTERNAL_SYSTEM_REQUEST_BATCH_SIZE;
-import static de.tum.in.www1.artemis.config.Constants.EXTERNAL_SYSTEM_REQUEST_BATCH_WAIT_TIME_MS;
+import static de.tum.in.www1.artemis.config.Constants.*;
 import static de.tum.in.www1.artemis.web.rest.util.ResponseUtil.*;
 
 import java.time.ZonedDateTime;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.slf4j.Logger;
@@ -376,7 +372,8 @@ public class ProgrammingSubmissionResource {
      */
     @GetMapping(value = "/exercises/{exerciseId}/programming-submission-without-assessment")
     @PreAuthorize("hasAnyRole('TA', 'INSTRUCTOR', 'ADMIN')")
-    public ResponseEntity<ProgrammingSubmission> getProgrammingSubmissionWithoutAssessment(@PathVariable Long exerciseId) {
+    public ResponseEntity<ProgrammingSubmission> getProgrammingSubmissionWithoutAssessment(@PathVariable Long exerciseId,
+            @RequestParam(value = "lock", defaultValue = "false") boolean lockSubmission) {
         log.debug("REST request to get a programming submission without assessment");
         final ProgrammingExercise programmingExercise = programmingExerciseService.findWithTemplateParticipationAndSolutionParticipationById(exerciseId);
         final User user = userService.getUserWithGroupsAndAuthorities();
@@ -390,13 +387,20 @@ public class ProgrammingSubmissionResource {
             return notFound();
         }
 
-        // TODO: Handle lock limit.
+        // Check if the limit of simultaneously locked submissions has been reached
+        programmingSubmissionService.checkSubmissionLockLimit(programmingExercise.getCourseViaExerciseGroupOrCourseMember().getId());
 
-        final Optional<ProgrammingSubmission> programmingSubmissionOpt = programmingSubmissionService.getRandomProgrammingSubmissionWithoutManualResult(programmingExercise);
-        if (programmingSubmissionOpt.isEmpty()) {
-            return notFound();
+        final ProgrammingSubmission programmingSubmission;
+        if (lockSubmission) {
+            programmingSubmission = programmingSubmissionService.getLockedProgrammingSubmissionWithoutResult(programmingExercise);
         }
-        final ProgrammingSubmission programmingSubmission = programmingSubmissionOpt.get();
+        else {
+            final Optional<ProgrammingSubmission> programmingSubmissionOpt = programmingSubmissionService.getRandomProgrammingSubmissionWithoutManualResult(programmingExercise);
+            if (programmingSubmissionOpt.isEmpty()) {
+                return notFound();
+            }
+            programmingSubmission = programmingSubmissionOpt.get();
+        }
 
         // Make sure the exercise is connected to the participation in the json response
         StudentParticipation studentParticipation = (StudentParticipation) programmingSubmission.getParticipation();

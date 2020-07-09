@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.enumeration.InitializationState;
@@ -588,6 +589,20 @@ public class ProgrammingSubmissionService extends SubmissionService {
                 .filter(submission -> submission.isPresent() && (!submittedOnly || submission.get().isSubmitted()))
                 .forEach(submission -> submissions.add((ProgrammingSubmission) submission.get()));
         return submissions;
+    }
+
+    /**
+     * Get a programming submission of the given exercise that still needs to be assessed and lock the submission to prevent other tutors from receiving and assessing it.
+     *
+     * @param programmingExercise the exercise the submission should belong to
+     * @return a locked file upload submission that needs an assessment
+     */
+    @Transactional
+    public ProgrammingSubmission getLockedProgrammingSubmissionWithoutResult(ProgrammingExercise programmingExercise) {
+        ProgrammingSubmission programmingSubmission = getRandomProgrammingSubmissionWithoutManualResult(programmingExercise)
+                .orElseThrow(() -> new EntityNotFoundException("Programming submission for exercise " + programmingExercise.getId() + " could not be found"));
+        lockSubmission(programmingSubmission);
+        return programmingSubmission;
     }
 
     /**
