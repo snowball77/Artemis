@@ -3,10 +3,14 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const AngularCompilerPlugin = require('@ngtools/webpack').AngularCompilerPlugin;
 const MergeJsonWebpackPlugin = require("merge-jsons-webpack-plugin");
+const SpeedMeasurePlugin = require("speed-measure-webpack-plugin");
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const utils = require('./utils.js');
 
-module.exports = (options) => ({
+const smp = new SpeedMeasurePlugin();
+
+module.exports = (options) => smp.wrap({
     resolve: {
         extensions: ['.ts', '.js'],
         modules: ['node_modules'],
@@ -81,6 +85,14 @@ module.exports = (options) => ({
                 { from: './src/main/webapp/manifest.webapp', to: 'manifest.webapp' },
                 { from: './src/main/webapp/robots.txt', to: 'robots.txt' },
             ],
+        }),
+        new ForkTsCheckerWebpackPlugin({
+            typescript: {
+                diagnosticOptions: {
+                    semantic: true,
+                    syntactic: true
+                }
+            }
         }),
         new MergeJsonWebpackPlugin({
             output: {
