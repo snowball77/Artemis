@@ -42,6 +42,10 @@ export class TextExamSubmissionComponent extends ExamSubmissionComponent impleme
         this.updateViewFromSubmission();
     }
 
+    getExercise(): Exercise {
+        return this.exercise;
+    }
+
     getSubmission(): Submission {
         return this.studentSubmission;
     }
