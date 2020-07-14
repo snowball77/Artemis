@@ -70,7 +70,9 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
         return this.exercise;
     }
 
-    onActivate(): void {}
+    onActivate(): void {
+        console.log('QuizExamSubmissionComponent.onActivate() for exercise ' + this.exercise.id);
+    }
 
     /**
      * Initialize the selections / mappings for each question with an empty array

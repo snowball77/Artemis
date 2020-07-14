@@ -416,7 +416,7 @@ export class ExamParticipationComponent implements OnInit, OnDestroy, ComponentC
         const activeComponent = this.activeSubmissionComponent;
 
         if ((activeComponent && force) || activeComponent?.hasUnsavedChanges()) {
-            const activeSubmission = this.activeSubmissionComponent?.getSubmission();
+            const activeSubmission = activeComponent?.getSubmission();
             if (activeSubmission) {
                 // this will lead to a save below, because isSynced will be set to false
                 activeSubmission.isSynced = false;

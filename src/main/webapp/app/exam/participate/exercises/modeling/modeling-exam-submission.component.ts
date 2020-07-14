@@ -39,7 +39,9 @@ export class ModelingExamSubmissionComponent extends ExamSubmissionComponent imp
         return this.exercise;
     }
 
-    onActivate(): void {}
+    onActivate(): void {
+        console.log('ModelingExamSubmissionComponent.onActivate() for exercise ' + this.exercise.id);
+    }
 
     updateViewFromSubmission(): void {
         if (this.studentSubmission.model) {
