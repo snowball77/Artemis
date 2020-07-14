@@ -5,6 +5,7 @@ import { ButtonSize, ButtonType } from 'app/shared/components/button.component';
 import { ProgrammingExercise } from 'app/entities/programming-exercise.model';
 import { ExamCodeEditorStudentContainerComponent } from 'app/exam/participate/exercises/programming/code-editor/exam-code-editor-student-container.component';
 import { EditorState } from 'app/exercises/programming/shared/code-editor/model/code-editor.model';
+import { Submission } from 'app/entities/submission.model';
 
 @Component({
     selector: 'jhi-programming-submission-exam',
@@ -20,6 +21,13 @@ export class ProgrammingExamSubmissionComponent extends ExamSubmissionComponent 
     exercise: ProgrammingExercise;
     @Input()
     courseId: number;
+
+    getSubmission(): Submission | null {
+        if (this.studentParticipation && this.studentParticipation.submissions && this.studentParticipation.submissions.length > 0) {
+            return this.studentParticipation.submissions[0];
+        }
+        return null;
+    }
 
     @ViewChild(ExamCodeEditorStudentContainerComponent, { static: false })
     codeEditorComponent: ExamCodeEditorStudentContainerComponent;

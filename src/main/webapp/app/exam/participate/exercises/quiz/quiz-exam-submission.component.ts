@@ -16,6 +16,7 @@ import { QuizSubmission } from 'app/entities/quiz/quiz-submission.model';
 import { ExamSubmissionComponent } from 'app/exam/participate/exercises/exam-submission.component';
 import { cloneDeep } from 'lodash';
 import { ArtemisQuizService } from 'app/shared/quiz/quiz.service';
+import { Submission } from 'app/entities/submission.model';
 
 @Component({
     selector: 'jhi-quiz-submission-exam',
@@ -58,6 +59,10 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
         this.initQuiz();
         // show submission answers in UI
         this.updateViewFromSubmission();
+    }
+
+    getSubmission(): Submission {
+        return this.studentSubmission;
     }
 
     onActivate(): void {}
@@ -237,6 +242,5 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
             shortAnswerSubmittedAnswer.submittedTexts = this.shortAnswerSubmittedTexts[questionID];
             this.studentSubmission.submittedAnswers.push(shortAnswerSubmittedAnswer);
         }, this);
-        this.studentSubmission.isSynced = false;
     }
 }

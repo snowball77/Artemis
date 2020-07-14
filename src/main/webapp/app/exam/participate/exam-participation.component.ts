@@ -394,11 +394,28 @@ export class ExamParticipationComponent implements OnInit, OnDestroy, ComponentC
         this.autoSaveTimer = 0;
 
         if ((this.activeSubmissionComponent && force) || this.activeSubmissionComponent?.hasUnsavedChanges()) {
-            // this will lead to a save below, because isSynced will be set to false
+            const activeSubmission = this.activeSubmissionComponent?.getSubmission();
+            if (activeSubmission) {
+                // this will lead to a save below, because isSynced will be set to false
+                activeSubmission.isSynced = false;
+
+                // make sure the active exercise includes the changed submission from the exam submission component
+                this.activeExercise.studentParticipations[0].submissions[0] = activeSubmission;
+                const currentExercise = this.studentExam.exercises.find((exercise) => exercise.id === this.activeExercise.id);
+                if (
+                    currentExercise &&
+                    currentExercise.studentParticipations &&
+                    currentExercise.studentParticipations.length > 0 &&
+                    currentExercise.studentParticipations[0].submissions &&
+                    currentExercise.studentParticipations[0].submissions.length > 0
+                ) {
+                    currentExercise.studentParticipations[0].submissions[0] = activeSubmission;
+                }
+            }
             this.activeSubmissionComponent.updateSubmissionFromView();
         }
 
-        // goes through all exercises and checks if there are unsynched submissions
+        // goes through all exercises and checks if there are unsynced submissions
         const submissionsToSync: { exercise: Exercise; submission: Submission }[] = [];
         this.studentExam.exercises.forEach((exercise: Exercise) => {
             exercise.studentParticipations.forEach((participation) => {
