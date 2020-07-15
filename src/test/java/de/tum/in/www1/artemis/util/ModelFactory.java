@@ -272,6 +272,12 @@ public class ModelFactory {
         return fileUploadSubmission;
     }
 
+    public static FileUploadSubmission generateFileUploadSubmissionWithFile(boolean submitted, String filePath) {
+        FileUploadSubmission fileUploadSubmission = generateFileUploadSubmission(submitted);
+        fileUploadSubmission.setFilePath(filePath);
+        return fileUploadSubmission;
+    }
+
     public static FileUploadSubmission generateLateFileUploadSubmission() {
         FileUploadSubmission fileUploadSubmission = new FileUploadSubmission();
         fileUploadSubmission.setSubmitted(true);
@@ -327,8 +333,19 @@ public class ModelFactory {
     }
 
     public static Exam generateExam(Course course) {
+        ZonedDateTime currentTime = ZonedDateTime.now();
         Exam exam = new Exam();
-        exam.setTitle("Exam title");
+        exam.setTitle("Test exam 1");
+        exam.setVisibleDate(currentTime);
+        exam.setStartDate(currentTime.plusMinutes(10));
+        exam.setEndDate(currentTime.plusMinutes(60));
+        exam.setStartText("Start Text");
+        exam.setEndText("End Text");
+        exam.setConfirmationStartText("Confirmation Start Text");
+        exam.setConfirmationEndText("Confirmation End Text");
+        exam.setMaxPoints(90);
+        exam.setNumberOfExercisesInExam(1);
+        exam.setRandomizeExerciseOrder(false);
         exam.setCourse(course);
         return exam;
     }

@@ -56,8 +56,9 @@ public class TextSubmissionService extends SubmissionService {
 
     public TextSubmissionService(TextSubmissionRepository textSubmissionRepository, TextClusterRepository textClusterRepository, SubmissionRepository submissionRepository,
             StudentParticipationRepository studentParticipationRepository, ParticipationService participationService, ResultRepository resultRepository, UserService userService,
-            Optional<TextAssessmentQueueService> textAssessmentQueueService, AuthorizationCheckService authCheckService, SubmissionVersionService submissionVersionService) {
-        super(submissionRepository, userService, authCheckService, resultRepository);
+            Optional<TextAssessmentQueueService> textAssessmentQueueService, AuthorizationCheckService authCheckService, SubmissionVersionService submissionVersionService,
+            CourseService courseService) {
+        super(submissionRepository, userService, authCheckService, courseService, resultRepository);
         this.textSubmissionRepository = textSubmissionRepository;
         this.textClusterRepository = textClusterRepository;
         this.studentParticipationRepository = studentParticipationRepository;
@@ -83,8 +84,11 @@ public class TextSubmissionService extends SubmissionService {
             throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "No participation found for " + principal.getName() + " in exercise " + textExercise.getId());
         }
         final var participation = optionalParticipation.get();
-        if (dueDate != null && participation.getInitializationDate().isBefore(dueDate) && dueDate.isBefore(ZonedDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        // Important: for exam exercises, we should NOT check the exercise due date, we only check if for course exercises
+        if (textExercise.hasCourse()) {
+            if (dueDate != null && participation.getInitializationDate().isBefore(dueDate) && dueDate.isBefore(ZonedDateTime.now())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
         }
 
         if (Boolean.TRUE.equals(textSubmission.isExampleSubmission())) {

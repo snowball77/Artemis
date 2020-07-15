@@ -36,8 +36,8 @@ public class ModelingSubmissionService extends SubmissionService {
 
     public ModelingSubmissionService(ModelingSubmissionRepository modelingSubmissionRepository, SubmissionRepository submissionRepository, ResultRepository resultRepository,
             CompassService compassService, UserService userService, SubmissionVersionService submissionVersionService, ParticipationService participationService,
-            StudentParticipationRepository studentParticipationRepository, AuthorizationCheckService authCheckService) {
-        super(submissionRepository, userService, authCheckService, resultRepository);
+            StudentParticipationRepository studentParticipationRepository, AuthorizationCheckService authCheckService, CourseService courseService) {
+        super(submissionRepository, userService, authCheckService, courseService, resultRepository);
         this.modelingSubmissionRepository = modelingSubmissionRepository;
         this.resultRepository = resultRepository;
         this.compassService = compassService;
@@ -230,7 +230,8 @@ public class ModelingSubmissionService extends SubmissionService {
             notifyCompass(modelingSubmission, modelingExercise);
         }
         catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
+            log.warn("There was an exception when notifying Compass about a new modeling submission with error message: " + ex.getMessage()
+                    + ". Artemis will ignore this error and continue to save the modeling submission", ex);
         }
         participation.setInitializationState(InitializationState.FINISHED);
 

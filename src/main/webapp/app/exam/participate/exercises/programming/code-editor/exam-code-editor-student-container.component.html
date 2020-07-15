@@ -1,4 +1,4 @@
-<jhi-code-editor-grid #grid [exerciseTitle]="exercise?.title">
+<jhi-code-editor-grid #grid [exerciseTitle]="exercise?.title" [exerciseMaxScore]="exercise?.maxScore">
     <div class="d-flex align-items-center ml-auto" editorNavbar>
         <jhi-updating-result
             *ngIf="participation"
@@ -16,7 +16,6 @@
             [participation]="participation"
             [btnSize]="ButtonSize.MEDIUM"
         ></jhi-programming-exercise-student-trigger-build-button>
-        <jhi-exercise-hint-student *ngIf="exercise" [exerciseId]="exercise.id" class="mr-2"></jhi-exercise-hint-student>
         <jhi-code-editor-actions
             [disableActions]="repositoryIsLocked"
             [unsavedFiles]="unsavedFiles"
@@ -24,6 +23,7 @@
             [(commitState)]="commitState"
             (onSavedFiles)="onSavedFiles($event)"
             (onError)="onError($event)"
+            (commitStateChange)="onCommitStateChange($event)"
         ></jhi-code-editor-actions>
     </div>
     <jhi-code-editor-file-browser
@@ -44,6 +44,7 @@
         [selectedFile]="selectedFile"
         [fileChange]="fileChange"
         [commitState]="commitState"
+        [editorState]="editorState"
         [(buildLogErrors)]="buildLogErrors"
         (onFileContentChange)="onFileContentChange($event)"
         (onError)="onError($event)"

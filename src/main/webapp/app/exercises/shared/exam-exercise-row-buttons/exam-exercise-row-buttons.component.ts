@@ -7,15 +7,16 @@ import { TextExerciseService } from 'app/exercises/text/manage/text-exercise/tex
 import { FileUploadExerciseService } from 'app/exercises/file-upload/manage/file-upload-exercise.service';
 import { QuizExerciseService } from 'app/exercises/quiz/manage/quiz-exercise.service';
 import { ProgrammingExerciseService } from 'app/exercises/programming/manage/services/programming-exercise.service';
+import { ModelingExerciseService } from 'app/exercises/modeling/manage/modeling-exercise.service';
+import { Course } from 'app/entities/course.model';
 
 @Component({
-    selector: 'jhi-exercise-row-buttons',
-    templateUrl: './exercise-row-buttons.component.html',
+    selector: 'jhi-exam-exercise-row-buttons',
+    templateUrl: './exam-exercise-row-buttons.component.html',
 })
-export class ExerciseRowButtonsComponent {
-    @Input() courseId: number;
+export class ExamExerciseRowButtonsComponent {
+    @Input() course: Course;
     @Input() exercise: Exercise;
-    @Input() examMode = false;
     @Input() examId: number;
     @Input() exerciseGroupId: number;
     @Output() onDeleteExercise = new EventEmitter<void>();
@@ -27,6 +28,7 @@ export class ExerciseRowButtonsComponent {
         private textExerciseService: TextExerciseService,
         private fileUploadExerciseService: FileUploadExerciseService,
         private programmingExerciseService: ProgrammingExerciseService,
+        private modelingExerciseService: ModelingExerciseService,
         private quizExerciseService: QuizExerciseService,
         private eventManager: JhiEventManager,
     ) {}
@@ -45,16 +47,32 @@ export class ExerciseRowButtonsComponent {
             case ExerciseType.QUIZ:
                 this.deleteQuizExercise();
                 break;
+            case ExerciseType.MODELING:
+                this.deleteModelingExercise();
+                break;
         }
     }
 
     private deleteTextExercise() {
         this.textExerciseService.delete(this.exercise.id).subscribe(
             () => {
-                // TODO: Should we choose another event name for exam exercises?
                 this.eventManager.broadcast({
                     name: 'textExerciseListModification',
                     content: 'Deleted a textExercise',
+                });
+                this.dialogErrorSource.next('');
+                this.onDeleteExercise.emit();
+            },
+            (error: HttpErrorResponse) => this.dialogErrorSource.next(error.message),
+        );
+    }
+
+    private deleteModelingExercise() {
+        this.modelingExerciseService.delete(this.exercise.id).subscribe(
+            () => {
+                this.eventManager.broadcast({
+                    name: 'modelingExerciseListModification',
+                    content: 'Deleted a modelingExercise',
                 });
                 this.dialogErrorSource.next('');
                 this.onDeleteExercise.emit();
@@ -103,24 +121,5 @@ export class ExerciseRowButtonsComponent {
             },
             (error: HttpErrorResponse) => this.dialogErrorSource.next(error.message),
         );
-    }
-
-    /**
-     * Assemble the router link for editing the exercise.
-     */
-    createRouterLink(type: string): any[] {
-        let link;
-        if (this.examMode) {
-            link = ['/course-management', this.courseId, 'exams', this.examId, 'exercise-groups', this.exerciseGroupId, `${this.exercise.type}-exercises`];
-        } else {
-            link = ['/course-management', this.courseId, `${this.exercise.type}-exercises`];
-        }
-
-        switch (type) {
-            case 'edit':
-                link = link.concat([this.exercise.id, 'edit']);
-                break;
-        }
-        return link;
     }
 }

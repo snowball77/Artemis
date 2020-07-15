@@ -14,6 +14,10 @@ import { DragAndDropSubmittedAnswer } from 'app/entities/quiz/drag-and-drop-subm
 import { ShortAnswerSubmittedAnswer } from 'app/entities/quiz/short-answer-submitted-answer.model';
 import { QuizSubmission } from 'app/entities/quiz/quiz-submission.model';
 import { ExamSubmissionComponent } from 'app/exam/participate/exercises/exam-submission.component';
+import { cloneDeep } from 'lodash';
+import { ArtemisQuizService } from 'app/shared/quiz/quiz.service';
+import { Submission } from 'app/entities/submission.model';
+import { Exercise } from 'app/entities/exercise.model';
 
 @Component({
     selector: 'jhi-quiz-submission-exam',
@@ -47,7 +51,7 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
     dragAndDropMappings = new Map<number, DragAndDropMapping[]>();
     shortAnswerSubmittedTexts = new Map<number, ShortAnswerSubmittedText[]>();
 
-    constructor() {
+    constructor(private quizService: ArtemisQuizService) {
         super();
         smoothscroll.polyfill();
     }
@@ -58,10 +62,24 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
         this.updateViewFromSubmission();
     }
 
+    getSubmission(): Submission {
+        return this.studentSubmission;
+    }
+
+    getExercise(): Exercise {
+        return this.exercise;
+    }
+
+    onActivate(): void {
+        console.log('QuizExamSubmissionComponent.onActivate() for exercise ' + this.exercise.id);
+    }
+
     /**
      * Initialize the selections / mappings for each question with an empty array
      */
     initQuiz() {
+        // randomize order
+        this.quizService.randomizeOrder(this.exercise);
         // prepare selection arrays for each question
         this.selectedAnswerOptions = new Map<number, AnswerOption[]>();
         this.dragAndDropMappings = new Map<number, DragAndDropMapping[]>();
@@ -89,8 +107,8 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
      * By clicking on the bubble of the progress navigation towards the corresponding question of the quiz is triggered
      * @param questionIndex
      */
-    navigateToQuestion(questionIndex: number): void {
-        document.getElementById('question' + questionIndex)!.scrollIntoView({
+    navigateToQuestion(questionId: number): void {
+        document.getElementById('question' + questionId)!.scrollIntoView({
             behavior: 'smooth',
         });
     }
@@ -122,7 +140,8 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
                     // add the array of selected options to the dictionary (add an empty array, if there is no submittedAnswer for this question)
                     if (submittedAnswer) {
                         const selectedOptions = (submittedAnswer as MultipleChoiceSubmittedAnswer).selectedOptions;
-                        this.selectedAnswerOptions[question.id] = selectedOptions ? selectedOptions : [];
+                        // needs to be cloned, because of two way binding, otherwise -> instant update in submission
+                        this.selectedAnswerOptions[question.id] = selectedOptions ? cloneDeep(selectedOptions) : [];
                     } else {
                         // not found, set to empty array
                         this.selectedAnswerOptions[question.id] = [];
@@ -131,7 +150,8 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
                     // add the array of mappings to the dictionary (add an empty array, if there is no submittedAnswer for this question)
                     if (submittedAnswer) {
                         const mappings = (submittedAnswer as DragAndDropSubmittedAnswer).mappings;
-                        this.dragAndDropMappings[question.id] = mappings ? mappings : [];
+                        // needs to be cloned, because of two way binding, otherwise -> instant update in submission
+                        this.dragAndDropMappings[question.id] = mappings ? cloneDeep(mappings) : [];
                     } else {
                         // not found, set to empty array
                         this.dragAndDropMappings[question.id] = [];
@@ -140,7 +160,8 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
                     // add the array of submitted texts to the dictionary (add an empty array, if there is no submittedAnswer for this question)
                     if (submittedAnswer) {
                         const submittedTexts = (submittedAnswer as ShortAnswerSubmittedAnswer).submittedTexts;
-                        this.shortAnswerSubmittedTexts[question.id] = submittedTexts ? submittedTexts : [];
+                        // needs to be cloned, because of two way binding, otherwise -> instant update in submission
+                        this.shortAnswerSubmittedTexts[question.id] = submittedTexts ? cloneDeep(submittedTexts) : [];
                     } else {
                         // not found, set to empty array
                         this.shortAnswerSubmittedTexts[question.id] = [];
@@ -153,24 +174,17 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
     }
 
     /**
-     * return true if we have no submission yet and we have new answers
-     * returns false if all submittedAnswers in studentSubmission are similar to the ones we have in the respective maps in this components
+     * Callback method to be triggered when the user changes any of the answers in the quiz (in sub components based on the question type)
+     */
+    onSelectionChanged() {
+        this.studentSubmission.isSynced = false;
+    }
+
+    /**
+     * return true if the user changed any answer in the quiz
      */
     hasUnsavedChanges(): boolean {
-        if (!this.studentSubmission.submittedAnswers) {
-            // subcomponents are not using a real map, thats why we need this workaround with Object.keys TODO: fix that at some point
-            return Object.keys(this.selectedAnswerOptions).length > 0 || Object.keys(this.dragAndDropMappings).length > 0 || Object.keys(this.shortAnswerSubmittedTexts).length > 0;
-        } else {
-            return !this.studentSubmission.submittedAnswers.every((answer) => {
-                if (answer instanceof MultipleChoiceSubmittedAnswer) {
-                    return this.selectedAnswerOptions[answer.quizQuestion.id] === answer;
-                } else if (answer instanceof DragAndDropSubmittedAnswer) {
-                    return this.dragAndDropMappings[answer.quizQuestion.id] === answer;
-                } else if (answer instanceof ShortAnswerSubmittedAnswer) {
-                    return this.shortAnswerSubmittedTexts[answer.quizQuestion.id] === answer;
-                }
-            });
-        }
+        return !this.studentSubmission.isSynced!;
     }
 
     /**
@@ -235,6 +249,5 @@ export class QuizExamSubmissionComponent extends ExamSubmissionComponent impleme
             shortAnswerSubmittedAnswer.submittedTexts = this.shortAnswerSubmittedTexts[questionID];
             this.studentSubmission.submittedAnswers.push(shortAnswerSubmittedAnswer);
         }, this);
-        this.studentSubmission.isSynced = false;
     }
 }

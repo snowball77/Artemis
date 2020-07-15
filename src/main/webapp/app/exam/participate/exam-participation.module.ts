@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { ArtemisSharedCommonModule } from 'app/shared/shared-common.module';
 import { ExamParticipationComponent } from 'app/exam/participate/exam-participation.component';
 import { ExamParticipationCoverComponent } from './exam-cover/exam-participation-cover.component';
-import { ExamParticipationSummaryComponent } from 'app/exam/participate/summary/exam-participation-summary.component';
 import { QuizExamSubmissionComponent } from 'app/exam/participate/exercises/quiz/quiz-exam-submission.component';
 import { examParticipationState } from 'app/exam/participate/exam-participation.route';
 import { ArtemisQuizQuestionTypesModule } from 'app/exercises/quiz/shared/questions/artemis-quiz-question-types.module';
@@ -13,6 +12,7 @@ import { TextExamSubmissionComponent } from 'app/exam/participate/exercises/text
 import { ModelingExamSubmissionComponent } from 'app/exam/participate/exercises/modeling/modeling-exam-submission.component';
 import { ArtemisModelingEditorModule } from 'app/exercises/modeling/shared/modeling-editor.module';
 import { ArtemisFullscreenModule } from 'app/shared/fullscreen/fullscreen.module';
+import { ArtemisProgrammingAssessmentModule } from 'app/exercises/programming/assess/programming-assessment.module';
 import { ExamNavigationBarComponent } from './exam-navigation-bar/exam-navigation-bar.component';
 import { ArtemisSharedComponentModule } from 'app/shared/components/shared-component.module';
 import { ProgrammingExamSubmissionComponent } from 'app/exam/participate/exercises/programming/programming-exam-submission.component';
@@ -25,6 +25,8 @@ import { ExamCodeEditorStudentContainerComponent } from 'app/exam/participate/ex
 import { ArtemisProgrammingExerciseInstructionsRenderModule } from 'app/exercises/programming/shared/instructions-render/programming-exercise-instructions-render.module';
 import { ArtemisCoursesModule } from 'app/overview/courses.module';
 import { OrionModule } from 'app/shared/orion/orion.module';
+import { ArtemisParticipationSummaryModule } from 'app/exam/participate/summary/exam-participation-summary.module';
+import { ExamTimerComponent } from './timer/exam-timer.component';
 
 const ENTITY_STATES = [...examParticipationState];
 
@@ -33,8 +35,8 @@ const ENTITY_STATES = [...examParticipationState];
         RouterModule.forChild(ENTITY_STATES),
         ArtemisSharedCommonModule,
         ArtemisSharedModule,
-        ArtemisQuizQuestionTypesModule,
         ArtemisModelingEditorModule,
+        ArtemisQuizQuestionTypesModule,
         ArtemisFullscreenModule,
         ArtemisSharedComponentModule,
         ArtemisProgrammingParticipationModule,
@@ -45,17 +47,19 @@ const ENTITY_STATES = [...examParticipationState];
         ArtemisProgrammingExerciseInstructionsRenderModule,
         ArtemisCoursesModule,
         OrionModule,
+        ArtemisProgrammingAssessmentModule,
+        ArtemisParticipationSummaryModule,
     ],
     declarations: [
         ExamParticipationComponent,
         ExamParticipationCoverComponent,
-        ExamParticipationSummaryComponent,
         QuizExamSubmissionComponent,
         ProgrammingExamSubmissionComponent,
         TextExamSubmissionComponent,
         ModelingExamSubmissionComponent,
         ExamNavigationBarComponent,
         ExamCodeEditorStudentContainerComponent,
+        ExamTimerComponent,
     ],
 })
 export class ArtemisExamParticipationModule {}

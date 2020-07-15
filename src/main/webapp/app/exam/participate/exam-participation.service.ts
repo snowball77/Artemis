@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SERVER_API_URL } from 'app/app.constants';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { StudentExam } from 'app/entities/student-exam.model';
 import { HttpClient } from '@angular/common/http';
 import { LocalStorageService } from 'ngx-webstorage';
@@ -13,6 +13,8 @@ import * as moment from 'moment';
 
 @Injectable({ providedIn: 'root' })
 export class ExamParticipationService {
+    public currentlyLoadedStudentExam = new Subject<StudentExam>();
+
     public getResourceURL(courseId: number, examId: number): string {
         return `${SERVER_API_URL}api/courses/${courseId}/exams/${examId}`;
     }
@@ -34,7 +36,7 @@ export class ExamParticipationService {
      * @param courseId the id of the course the exam is created in
      * @param examId the id of the exam
      */
-    public loadStudentExam(courseId: number, examId: number): Observable<StudentExam> {
+    public loadStudentExamWithExercises(courseId: number, examId: number): Observable<StudentExam> {
         // download student exam from server
         return this.getStudentExamFromServer(courseId, examId).pipe(
             catchError(() => {
@@ -49,9 +51,25 @@ export class ExamParticipationService {
      * @param courseId the id of the course the exam is created in
      * @param examId the id of the exam
      */
-    public loadExam(courseId: number, examId: number): Observable<Exam> {
+    public loadStudentExam(courseId: number, examId: number): Observable<StudentExam> {
         const url = this.getResourceURL(courseId, examId) + '/conduction';
-        return this.httpClient.get<Exam>(url).map((exam: Exam) => this.convertExamDateFromServer(exam));
+        const loadedStudentExam = this.httpClient.get<StudentExam>(url).map((studentExam: StudentExam) => {
+            const convertedStudentExam = this.convertStudentExamDateFromServer(studentExam);
+            this.currentlyLoadedStudentExam.next(convertedStudentExam);
+            return convertedStudentExam;
+        });
+        return loadedStudentExam;
+    }
+
+    /**
+     * Submits {@link StudentExam} - the exam cannot be updated afterwards anymore
+     * @param courseId the id of the course the exam is created in
+     * @param examId the id of the exam
+     * @param studentExam: the student exam to submit
+     */
+    public submitStudentExam(courseId: number, examId: number, studentExam: StudentExam): Observable<void> {
+        const url = this.getResourceURL(courseId, examId) + '/studentExams/submit';
+        return this.httpClient.post<void>(url, studentExam);
     }
 
     /**
@@ -110,6 +128,14 @@ export class ExamParticipationService {
         exam.visibleDate = exam.visibleDate ? moment(exam.visibleDate) : null;
         exam.startDate = exam.startDate ? moment(exam.startDate) : null;
         exam.endDate = exam.endDate ? moment(exam.endDate) : null;
+        exam.publishResultsDate = exam.publishResultsDate ? moment(exam.publishResultsDate) : null;
+        exam.examStudentReviewStart = exam.examStudentReviewStart ? moment(exam.examStudentReviewStart) : null;
+        exam.examStudentReviewEnd = exam.examStudentReviewEnd ? moment(exam.examStudentReviewEnd) : null;
         return exam;
+    }
+
+    private convertStudentExamDateFromServer(studentExam: StudentExam): StudentExam {
+        studentExam.exam = this.convertExamDateFromServer(studentExam.exam);
+        return studentExam;
     }
 }

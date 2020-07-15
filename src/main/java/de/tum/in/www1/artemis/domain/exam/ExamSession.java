@@ -9,7 +9,10 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import de.tum.in.www1.artemis.domain.AbstractAuditingEntity;
+import inet.ipaddr.IPAddress;
+import inet.ipaddr.IPAddressString;
 
 @Entity
 @Table(name = "exam_session")
@@ -34,6 +37,12 @@ public class ExamSession extends AbstractAuditingEntity implements Serializable 
 
     @Column(name = "browser_fingerprint_hash")
     private String browserFingerprintHash;
+
+    @Column(name = "instance_id")
+    private String instanceId;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
 
     public ExamSession() {
     }
@@ -76,6 +85,30 @@ public class ExamSession extends AbstractAuditingEntity implements Serializable 
 
     public void setBrowserFingerprintHash(String browserFingerprintHash) {
         this.browserFingerprintHash = browserFingerprintHash;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
+
+    public IPAddress getIpAddress() {
+        return ipAddress != null ? new IPAddressString(ipAddress).getAddress() : null;
+    }
+
+    public void setIpAddress(IPAddress ipAddress) {
+        this.ipAddress = ipAddress != null ? ipAddress.toCanonicalString() : null;
+
+    }
+
+    public void hideDetails() {
+        setUserAgent(null);
+        setBrowserFingerprintHash(null);
+        setInstanceId(null);
+        setIpAddress(null);
     }
 
     @Override
