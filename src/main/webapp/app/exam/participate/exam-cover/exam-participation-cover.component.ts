@@ -26,8 +26,10 @@ export class ExamParticipationCoverComponent implements OnInit, OnDestroy {
     @Input() startView: boolean;
     @Input() exam: Exam;
     @Input() studentExam: StudentExam;
+    @Input() handInEarly = false;
     @Output() onExamStarted: EventEmitter<StudentExam> = new EventEmitter<StudentExam>();
     @Output() onExamEnded: EventEmitter<StudentExam> = new EventEmitter<StudentExam>();
+    @Output() onExamContinueAfterHandInEarly = new EventEmitter<void>();
     course: Course | null;
     startEnabled: boolean;
     endEnabled: boolean;
@@ -178,6 +180,13 @@ export class ExamParticipationCoverComponent implements OnInit, OnDestroy {
         this.onExamEnded.emit();
     }
 
+    /**
+     * Notify the parent component that the user wants to continue after hand in early
+     */
+    continueAfterHandInEarly() {
+        this.onExamContinueAfterHandInEarly.emit();
+    }
+
     get startButtonEnabled(): boolean {
         return !!(this.nameIsCorrect && this.confirmed && this.exam && this.exam.visibleDate && this.exam.visibleDate.isBefore(this.serverDateService.now()));
     }
@@ -193,5 +202,15 @@ export class ExamParticipationCoverComponent implements OnInit, OnDestroy {
 
     get inserted(): boolean {
         return this.enteredName.trim() !== '';
+    }
+
+    /**
+     * Calculates the end time depending on the individual working time
+     */
+    endTime(): moment.Moment {
+        if (this.studentExam && this.studentExam.workingTime && this.exam.startDate) {
+            return moment(this.exam.startDate).add(this.studentExam.workingTime, 'seconds');
+        }
+        return this.exam.endDate!;
     }
 }

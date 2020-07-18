@@ -22,6 +22,7 @@ import de.tum.in.www1.artemis.domain.modeling.ModelingSubmission;
 import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.domain.quiz.QuizSubmission;
+import de.tum.in.www1.artemis.domain.quiz.SubmittedAnswer;
 import de.tum.in.www1.artemis.repository.ModelingSubmissionRepository;
 import de.tum.in.www1.artemis.repository.QuizSubmissionRepository;
 import de.tum.in.www1.artemis.repository.StudentExamRepository;
@@ -178,11 +179,12 @@ public class StudentExamService {
             }
         }
 
-        // if everything worked -> set studentExam to submitted
+        // if everything worked -> set studentExam to submitted and set submission date
         studentExam.setSubmitted(true);
+        studentExam.setSubmissionDate(ZonedDateTime.now());
         studentExamRepository.save(studentExam);
 
-        return ResponseEntity.ok().build();
+        return ok();
     }
 
     /**
