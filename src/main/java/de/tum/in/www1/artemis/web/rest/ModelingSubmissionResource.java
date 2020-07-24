@@ -342,16 +342,13 @@ public class ModelingSubmissionResource {
         }
         else {
             // otherwise get a random (non-optimal) submission that is not assessed
-            var participations = participationService.findByExerciseIdWithLatestSubmissionWithoutManualResults(modelingExercise.getId());
-            var submissionsWithoutResult = participations.stream().map(StudentParticipation::findLatestSubmission).filter(Optional::isPresent).map(Optional::get)
-                    .collect(Collectors.toList());
-
-            if (submissionsWithoutResult.isEmpty()) {
-                return ResponseEntity.ok(new Long[] {}); // empty
+            Optional<ModelingSubmission> submissionWithoutResult = modelingSubmissionService.getModelingSubmissionWithoutManualResult(modelingExercise);
+            if (submissionWithoutResult.isPresent()) {
+                return ResponseEntity.ok(new Long[] { submissionWithoutResult.get().getId() });
+            } else {
+                return ResponseEntity.ok(new Long[] {});
             }
 
-            Random random = new Random();
-            return ResponseEntity.ok(new Long[] { submissionsWithoutResult.get(random.nextInt(submissionsWithoutResult.size())).getId() });
         }
     }
 
