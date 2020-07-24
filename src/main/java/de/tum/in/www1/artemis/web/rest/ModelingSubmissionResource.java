@@ -8,8 +8,6 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotNull;
 
@@ -345,7 +343,8 @@ public class ModelingSubmissionResource {
             Optional<ModelingSubmission> submissionWithoutResult = modelingSubmissionService.getModelingSubmissionWithoutManualResult(modelingExercise);
             if (submissionWithoutResult.isPresent()) {
                 return ResponseEntity.ok(new Long[] { submissionWithoutResult.get().getId() });
-            } else {
+            }
+            else {
                 return ResponseEntity.ok(new Long[] {});
             }
 

@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import de.tum.in.www1.artemis.domain.exam.StudentExam;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +50,8 @@ public class FileUploadSubmissionService extends SubmissionService {
     private final StudentExamService studentExamService;
 
     public FileUploadSubmissionService(FileUploadSubmissionRepository fileUploadSubmissionRepository, SubmissionRepository submissionRepository, ResultRepository resultRepository,
-                                       ParticipationService participationService, UserService userService, StudentParticipationRepository studentParticipationRepository, FileService fileService,
-                                       AuthorizationCheckService authCheckService, CourseService courseService, ExamService examService, StudentExamService studentExamService) {
+            ParticipationService participationService, UserService userService, StudentParticipationRepository studentParticipationRepository, FileService fileService,
+            AuthorizationCheckService authCheckService, CourseService courseService, ExamService examService, StudentExamService studentExamService) {
         super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService, studentExamService);
         this.fileUploadSubmissionRepository = fileUploadSubmissionRepository;
         this.resultRepository = resultRepository;

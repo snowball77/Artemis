@@ -9,9 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import de.tum.in.www1.artemis.domain.exam.StudentExam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
+import de.tum.in.www1.artemis.domain.exam.StudentExam;
 import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.repository.ResultRepository;
 import de.tum.in.www1.artemis.repository.SubmissionRepository;
@@ -281,7 +280,10 @@ public class SubmissionService {
             List<StudentExam> studentExams = this.studentExamService.findAllByExamId(exercise.getExerciseGroup().getExam().getId());
             List<StudentExam> validStudentExams = studentExams.stream().filter(studentExam -> studentExam.isSubmitted().equals(Boolean.TRUE)).collect(toList());
             // Use only the submissions of the valid student exams
-            return submissions.stream().filter(examSubmission -> validStudentExams.stream().anyMatch(studentExam -> studentExam.getUser().equals(((StudentParticipation) examSubmission.getParticipation()).getStudent().get()))).collect(toList());
+            return submissions.stream()
+                    .filter(examSubmission -> validStudentExams.stream()
+                            .anyMatch(studentExam -> studentExam.getUser().equals(((StudentParticipation) examSubmission.getParticipation()).getStudent().get())))
+                    .collect(toList());
         }
 
         if (exercise.getDueDate() == null) {
@@ -289,7 +291,8 @@ public class SubmissionService {
             return submissions;
         }
 
-        boolean hasInTimeSubmissions = submissions.stream().anyMatch(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(exercise.getDueDate()));
+        boolean hasInTimeSubmissions = submissions.stream()
+                .anyMatch(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(exercise.getDueDate()));
         if (hasInTimeSubmissions) {
             return submissions.stream().filter(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(exercise.getDueDate()))
                     .collect(toList());
