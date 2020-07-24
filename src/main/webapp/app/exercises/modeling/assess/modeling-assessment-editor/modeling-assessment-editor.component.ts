@@ -397,6 +397,7 @@ export class ModelingAssessmentEditorComponent implements OnInit {
 
     assessNextOptimal() {
         this.nextSubmissionBusy = true;
+        // TODO: Investigate why we call this instead of modelingSubmissionService.getModelingSubmissionForExerciseWithoutAssessment like in the other exercises types
         this.modelingAssessmentService.getOptimalSubmissions(this.modelingExercise!.id).subscribe(
             (optimal: number[]) => {
                 this.nextSubmissionBusy = false;
