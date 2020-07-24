@@ -36,10 +36,12 @@ public class ModelingSubmissionService extends SubmissionService {
 
     private final ExamService examService;
 
+    private final StudentExamService studentExamService;
+
     public ModelingSubmissionService(ModelingSubmissionRepository modelingSubmissionRepository, SubmissionRepository submissionRepository, ResultRepository resultRepository,
             CompassService compassService, UserService userService, SubmissionVersionService submissionVersionService, ParticipationService participationService,
-            StudentParticipationRepository studentParticipationRepository, AuthorizationCheckService authCheckService, CourseService courseService, ExamService examService) {
-        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService);
+            StudentParticipationRepository studentParticipationRepository, AuthorizationCheckService authCheckService, CourseService courseService, ExamService examService, StudentExamService studentExamService) {
+        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService, studentExamService);
         this.modelingSubmissionRepository = modelingSubmissionRepository;
         this.resultRepository = resultRepository;
         this.compassService = compassService;
@@ -47,6 +49,7 @@ public class ModelingSubmissionService extends SubmissionService {
         this.participationService = participationService;
         this.studentParticipationRepository = studentParticipationRepository;
         this.examService = examService;
+        this.studentExamService = studentExamService;
     }
 
     /**
@@ -147,11 +150,11 @@ public class ModelingSubmissionService extends SubmissionService {
         var submissionsWithoutResult = participations.stream().map(StudentParticipation::findLatestSubmission).filter(Optional::isPresent).map(Optional::get)
                 .collect(Collectors.toList());
 
+        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, modelingExercise);
+
         if (submissionsWithoutResult.isEmpty()) {
             return Optional.empty();
         }
-
-        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, modelingExercise.getDueDate());
 
         Random random = new Random();
         var submissionWithoutResult = (ModelingSubmission) submissionsWithoutResult.get(random.nextInt(submissionsWithoutResult.size()));

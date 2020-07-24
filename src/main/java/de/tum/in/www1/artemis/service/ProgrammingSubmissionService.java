@@ -69,13 +69,15 @@ public class ProgrammingSubmissionService extends SubmissionService {
 
     private final ExamService examService;
 
+    private final StudentExamService studentExamService;
+
     public ProgrammingSubmissionService(ProgrammingSubmissionRepository programmingSubmissionRepository, ProgrammingExerciseRepository programmingExerciseRepository,
             GroupNotificationService groupNotificationService, SubmissionRepository submissionRepository, UserService userService, AuthorizationCheckService authCheckService,
             WebsocketMessagingService websocketMessagingService, Optional<VersionControlService> versionControlService, ResultRepository resultRepository,
             Optional<ContinuousIntegrationService> continuousIntegrationService, ParticipationService participationService, SimpMessageSendingOperations messagingTemplate,
             ProgrammingExerciseParticipationService programmingExerciseParticipationService, GitService gitService, StudentParticipationRepository studentParticipationRepository,
-            CourseService courseService, ExamService examService) {
-        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService);
+            CourseService courseService, ExamService examService, StudentExamService studentExamService) {
+        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService, studentExamService);
         this.programmingSubmissionRepository = programmingSubmissionRepository;
         this.programmingExerciseRepository = programmingExerciseRepository;
         this.groupNotificationService = groupNotificationService;
@@ -89,6 +91,7 @@ public class ProgrammingSubmissionService extends SubmissionService {
         this.studentParticipationRepository = studentParticipationRepository;
         this.resultRepository = resultRepository;
         this.examService = examService;
+        this.studentExamService = studentExamService;
     }
 
     /**
@@ -606,11 +609,11 @@ public class ProgrammingSubmissionService extends SubmissionService {
                 .map(StudentParticipation::findLatestSubmission).filter(Optional::isPresent).map(Optional::get).map(submission -> (ProgrammingSubmission) submission)
                 .collect(Collectors.toList());
 
+        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, programmingExercise);
+
         if (submissionsWithoutResult.isEmpty()) {
             return Optional.empty();
         }
-
-        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, programmingExercise.getDueDate());
 
         return Optional.of(submissionsWithoutResult.get(r.nextInt(submissionsWithoutResult.size())));
     }

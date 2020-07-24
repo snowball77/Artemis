@@ -52,11 +52,13 @@ public class TextSubmissionService extends SubmissionService {
 
     private final ExamService examService;
 
+    private final StudentExamService studentExamService;
+
     public TextSubmissionService(TextSubmissionRepository textSubmissionRepository, TextClusterRepository textClusterRepository, SubmissionRepository submissionRepository,
             StudentParticipationRepository studentParticipationRepository, ParticipationService participationService, ResultRepository resultRepository, UserService userService,
             Optional<TextAssessmentQueueService> textAssessmentQueueService, AuthorizationCheckService authCheckService, SubmissionVersionService submissionVersionService,
-            CourseService courseService, ExamService examService) {
-        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService);
+            CourseService courseService, ExamService examService, StudentExamService studentExamService) {
+        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService, studentExamService);
         this.textSubmissionRepository = textSubmissionRepository;
         this.textClusterRepository = textClusterRepository;
         this.studentParticipationRepository = studentParticipationRepository;
@@ -65,6 +67,7 @@ public class TextSubmissionService extends SubmissionService {
         this.textAssessmentQueueService = textAssessmentQueueService;
         this.submissionVersionService = submissionVersionService;
         this.examService = examService;
+        this.studentExamService = studentExamService;
     }
 
     /**
@@ -192,11 +195,11 @@ public class TextSubmissionService extends SubmissionService {
         var participations = participationService.findByExerciseIdWithLatestSubmissionWithoutManualResults(textExercise.getId());
         var submissionsWithoutResult = participations.stream().map(StudentParticipation::findLatestSubmission).filter(Optional::isPresent).map(Optional::get).collect(toList());
 
+        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, textExercise);
+
         if (submissionsWithoutResult.isEmpty()) {
             return Optional.empty();
         }
-
-        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, textExercise.getDueDate());
 
         var submissionWithoutResult = (TextSubmission) submissionsWithoutResult.get(random.nextInt(submissionsWithoutResult.size()));
         return Optional.of(submissionWithoutResult);

@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import de.tum.in.www1.artemis.domain.exam.StudentExam;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,16 +48,19 @@ public class FileUploadSubmissionService extends SubmissionService {
 
     private final ExamService examService;
 
+    private final StudentExamService studentExamService;
+
     public FileUploadSubmissionService(FileUploadSubmissionRepository fileUploadSubmissionRepository, SubmissionRepository submissionRepository, ResultRepository resultRepository,
-            ParticipationService participationService, UserService userService, StudentParticipationRepository studentParticipationRepository, FileService fileService,
-            AuthorizationCheckService authCheckService, CourseService courseService, ExamService examService) {
-        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService);
+                                       ParticipationService participationService, UserService userService, StudentParticipationRepository studentParticipationRepository, FileService fileService,
+                                       AuthorizationCheckService authCheckService, CourseService courseService, ExamService examService, StudentExamService studentExamService) {
+        super(submissionRepository, userService, authCheckService, courseService, resultRepository, examService, studentExamService);
         this.fileUploadSubmissionRepository = fileUploadSubmissionRepository;
         this.resultRepository = resultRepository;
         this.participationService = participationService;
         this.studentParticipationRepository = studentParticipationRepository;
         this.fileService = fileService;
         this.examService = examService;
+        this.studentExamService = studentExamService;
     }
 
     /**
@@ -130,11 +134,11 @@ public class FileUploadSubmissionService extends SubmissionService {
         var submissionsWithoutResult = participations.stream().map(StudentParticipation::findLatestSubmission).filter(Optional::isPresent).map(Optional::get)
                 .collect(Collectors.toList());
 
+        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, fileUploadExercise);
+
         if (submissionsWithoutResult.isEmpty()) {
             return Optional.empty();
         }
-
-        submissionsWithoutResult = selectOnlySubmissionsBeforeDueDateOrAll(submissionsWithoutResult, fileUploadExercise.getDueDate());
 
         var submissionWithoutResult = (FileUploadSubmission) submissionsWithoutResult.get(random.nextInt(submissionsWithoutResult.size()));
         return Optional.of(submissionWithoutResult);
