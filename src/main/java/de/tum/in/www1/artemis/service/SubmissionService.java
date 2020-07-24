@@ -2,13 +2,16 @@ package de.tum.in.www1.artemis.service;
 
 import static de.tum.in.www1.artemis.config.Constants.MAX_NUMBER_OF_LOCKED_SUBMISSIONS_PER_TUTOR;
 import static de.tum.in.www1.artemis.web.rest.util.ResponseUtil.forbidden;
+import static java.util.stream.Collectors.toList;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import de.tum.in.www1.artemis.domain.exam.StudentExam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -40,14 +43,17 @@ public class SubmissionService {
 
     private final ExamService examService;
 
+    private final StudentExamService studentExamService;
+
     public SubmissionService(SubmissionRepository submissionRepository, UserService userService, AuthorizationCheckService authCheckService, CourseService courseService,
-            ResultRepository resultRepository, ExamService examService) {
+            ResultRepository resultRepository, ExamService examService, StudentExamService studentExamService) {
         this.submissionRepository = submissionRepository;
         this.userService = userService;
         this.courseService = courseService;
         this.authCheckService = authCheckService;
         this.resultRepository = resultRepository;
         this.examService = examService;
+        this.studentExamService = studentExamService;
     }
 
     /**
@@ -261,19 +267,32 @@ public class SubmissionService {
      * Filters the submissions to contain only in-time submissions if there are any.
      * If not, the original list is returned.
      * @param submissions The submissions to filter
-     * @param dueDate The due-date to filter by
+     * @param exercise The exercise to filter by
      * @return The filtered list of submissions
      */
-    protected <T extends Submission> List<T> selectOnlySubmissionsBeforeDueDateOrAll(List<T> submissions, ZonedDateTime dueDate) {
-        if (dueDate == null) {
+    protected <T extends Submission> List<T> selectOnlySubmissionsBeforeDueDateOrAll(List<T> submissions, Exercise exercise) {
+        // Check if submissions are empty and return empty list
+        if (submissions.isEmpty()) {
+            return new ArrayList<T>();
+        }
+        // Check for exam exercises
+        if (exercise.hasExerciseGroup()) {
+            // Get student exams that are confirmed and final submitted within the grace period
+            List<StudentExam> studentExams = this.studentExamService.findAllByExamId(exercise.getExerciseGroup().getExam().getId());
+            List<StudentExam> validStudentExams = studentExams.stream().filter(studentExam -> studentExam.isSubmitted().equals(Boolean.TRUE)).collect(toList());
+            // Use only the submissions of the valid student exams
+            return submissions.stream().filter(examSubmission -> validStudentExams.stream().anyMatch(studentExam -> studentExam.getUser().equals(((StudentParticipation) examSubmission.getParticipation()).getStudent().get()))).collect(toList());
+        }
+
+        if (exercise.getDueDate() == null) {
             // this is an edge case, then basically all submissions are before due date
             return submissions;
         }
 
-        boolean hasInTimeSubmissions = submissions.stream().anyMatch(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(dueDate));
+        boolean hasInTimeSubmissions = submissions.stream().anyMatch(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(exercise.getDueDate()));
         if (hasInTimeSubmissions) {
-            return submissions.stream().filter(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(dueDate))
-                    .collect(Collectors.toList());
+            return submissions.stream().filter(submission -> submission.getSubmissionDate() != null && submission.getSubmissionDate().isBefore(exercise.getDueDate()))
+                    .collect(toList());
         }
         else {
             return submissions;
