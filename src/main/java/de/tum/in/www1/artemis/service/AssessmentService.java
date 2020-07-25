@@ -56,7 +56,8 @@ public class AssessmentService {
             result.setRated(true);
         }
         else {
-            result.setRatedIfNotExceeded(exercise.getDueDate(), result.getSubmission().getSubmissionDate());
+            var submissionDate = resultRepository.findWithEagerSubmissionById(result.getId()).get().getSubmission().getSubmissionDate();
+            result.setRatedIfNotExceeded(exercise.getDueDate(), submissionDate);
         }
 
         result.setCompletionDate(ZonedDateTime.now());
@@ -76,7 +77,7 @@ public class AssessmentService {
      * @param assessmentUpdate the assessment update containing a ComplaintResponse and the updated Feedback list
      * @return the updated Result
      */
-    // NOTE: transactional makes sense here because we change multiple objects in the database and the changes might be invalid in case, one save operation fails
+    // NOTE: transactional makes sense here because we change multiple objects in the database and the changes might be invalid, in case one save operation fails
     @Transactional
     public Result updateAssessmentAfterComplaint(Result originalResult, Exercise exercise, AssessmentUpdate assessmentUpdate) {
         if (assessmentUpdate.getFeedbacks() == null || assessmentUpdate.getComplaintResponse() == null) {

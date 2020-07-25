@@ -54,10 +54,10 @@ public interface ResultRepository extends JpaRepository<Result, Long> {
     Optional<Result> findDistinctWithFeedbackBySubmissionId(Long submissionId);
 
     @Query("select r from Result r left join fetch r.feedbacks where r.id = :resultId")
-    Optional<Result> findByIdWithEagerFeedbacks(@Param("resultId") Long id);
+    Optional<Result> findByIdWithEagerFeedbacks(@Param("resultId") Long resultId);
 
     @Query("select r from Result r left join fetch r.feedbacks left join fetch r.assessor where r.id = :resultId")
-    Optional<Result> findByIdWithEagerFeedbacksAndAssessor(@Param("resultId") Long id);
+    Optional<Result> findByIdWithEagerFeedbacksAndAssessor(@Param("resultId") Long resultId);
 
     /**
      * Load a result from the database by its id together with the associated submission, the list of feedback items and the assessor.
@@ -67,6 +67,9 @@ public interface ResultRepository extends JpaRepository<Result, Long> {
      */
     @EntityGraph(type = LOAD, attributePaths = { "submission", "feedbacks", "assessor" })
     Optional<Result> findWithEagerSubmissionAndFeedbackAndAssessorById(Long resultId);
+
+    @EntityGraph(type = LOAD, attributePaths = { "submission" })
+    Optional<Result> findWithEagerSubmissionById(Long resultId);
 
     Long countByAssessorIsNotNullAndParticipation_Exercise_CourseIdAndRatedAndCompletionDateIsNotNull(long courseId, boolean rated);
 

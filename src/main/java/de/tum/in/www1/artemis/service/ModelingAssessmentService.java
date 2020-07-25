@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import de.tum.in.www1.artemis.domain.Feedback;
 import de.tum.in.www1.artemis.domain.Result;
@@ -15,9 +14,7 @@ import de.tum.in.www1.artemis.domain.User;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
 import de.tum.in.www1.artemis.domain.modeling.ModelingExercise;
 import de.tum.in.www1.artemis.domain.modeling.ModelingSubmission;
-import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.repository.*;
-import de.tum.in.www1.artemis.service.compass.CompassService;
 import de.tum.in.www1.artemis.web.rest.errors.EntityNotFoundException;
 
 @Service
@@ -31,16 +28,13 @@ public class ModelingAssessmentService extends AssessmentService {
 
     private final ModelingSubmissionRepository modelingSubmissionRepository;
 
-    private final CompassService compassService;
-
-    public ModelingAssessmentService(UserService userService, ComplaintResponseService complaintResponseService, CompassService compassService,
-            ModelingSubmissionRepository modelingSubmissionRepository, ComplaintRepository complaintRepository, FeedbackRepository feedbackRepository,
-            ResultRepository resultRepository, StudentParticipationRepository studentParticipationRepository, ResultService resultService,
-            ModelingSubmissionService modelingSubmissionService, SubmissionRepository submissionRepository, ExamService examService) {
+    public ModelingAssessmentService(UserService userService, ComplaintResponseService complaintResponseService, ModelingSubmissionRepository modelingSubmissionRepository,
+            ComplaintRepository complaintRepository, FeedbackRepository feedbackRepository, ResultRepository resultRepository,
+            StudentParticipationRepository studentParticipationRepository, ResultService resultService, ModelingSubmissionService modelingSubmissionService,
+            SubmissionRepository submissionRepository, ExamService examService) {
         super(complaintResponseService, complaintRepository, feedbackRepository, resultRepository, studentParticipationRepository, resultService, submissionRepository,
                 examService);
         this.userService = userService;
-        this.compassService = compassService;
         this.modelingSubmissionRepository = modelingSubmissionRepository;
         this.modelingSubmissionService = modelingSubmissionService;
     }
@@ -54,7 +48,6 @@ public class ModelingAssessmentService extends AssessmentService {
      * @param submissionDate the date manual assessment was submitted
      * @return the ResponseEntity with result as body
      */
-    @Transactional
     public Result submitManualAssessment(long resultId, ModelingExercise exercise, ZonedDateTime submissionDate) {
         // TODO CZ: use AssessmentService#submitResult() function instead
         Result result = resultRepository.findWithEagerSubmissionAndFeedbackAndAssessorById(resultId)
@@ -72,11 +65,9 @@ public class ModelingAssessmentService extends AssessmentService {
      *
      * @param modelingSubmission the modeling submission to which the feedback belongs to
      * @param modelingAssessment the assessment as a feedback list that should be added to the result of the corresponding submission
-     * @param modelingExercise the modeling exercise for which assessment due date is checked
      * @return result that was saved in the database
      */
-    @Transactional
-    public Result saveManualAssessment(ModelingSubmission modelingSubmission, List<Feedback> modelingAssessment, ModelingExercise modelingExercise) {
+    public Result saveManualAssessment(ModelingSubmission modelingSubmission, List<Feedback> modelingAssessment) {
         Result result = modelingSubmission.getResult();
         if (result == null) {
             result = modelingSubmissionService.setNewResult(modelingSubmission);
@@ -101,27 +92,12 @@ public class ModelingAssessmentService extends AssessmentService {
     }
 
     /**
-     * Cancel an assessment of a given modeling submission for the current user, i.e. delete the corresponding result / release the lock and tell Compass that the submission is
-     * available for assessment again.
-     *
-     * @param modelingSubmission the modeling submission for which the current assessment should be canceled
-     */
-    @Transactional // NOTE: As we use delete methods with underscores in the super method, we need a transactional context here!
-    public void cancelAssessmentOfSubmission(ModelingSubmission modelingSubmission) {
-        super.cancelAssessmentOfSubmission(modelingSubmission);
-        var studentParticipation = (StudentParticipation) modelingSubmission.getParticipation();
-        ModelingExercise modelingExercise = (ModelingExercise) studentParticipation.getExercise();
-        compassService.cancelAssessmentForSubmission(modelingExercise, modelingSubmission.getId());
-    }
-
-    /**
      * Gets an example modeling submission with the given submissionId and returns the result of the submission.
      *
      * @param submissionId the id of the example modeling submission
      * @return the result of the submission
      * @throws EntityNotFoundException when no submission can be found for the given id
      */
-    @Transactional(readOnly = true)
     public Result getExampleAssessment(long submissionId) {
         Optional<ModelingSubmission> optionalModelingSubmission = modelingSubmissionRepository.findExampleSubmissionByIdWithEagerResult(submissionId);
         ModelingSubmission modelingSubmission = optionalModelingSubmission

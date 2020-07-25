@@ -4,7 +4,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.enumeration.AssessmentType;
@@ -41,7 +40,6 @@ public class FileUploadAssessmentService extends AssessmentService {
      * @param submissionDate the date manual assessment was submitted
      * @return the ResponseEntity with result as body
      */
-    @Transactional
     public Result submitAssessment(long resultId, FileUploadExercise fileUploadExercise, ZonedDateTime submissionDate) {
         Result result = resultRepository.findWithEagerSubmissionAndFeedbackAndAssessorById(resultId)
                 .orElseThrow(() -> new EntityNotFoundException("No result for the given resultId could be found"));
@@ -60,7 +58,6 @@ public class FileUploadAssessmentService extends AssessmentService {
      * @param fileUploadAssessment the assessment as a feedback list that should be added to the result of the corresponding submission
      * @return result that was saved in the database
      */
-    @Transactional
     public Result saveAssessment(FileUploadSubmission fileUploadSubmission, List<Feedback> fileUploadAssessment) {
         Result result = fileUploadSubmission.getResult();
         if (result == null) {
@@ -85,8 +82,7 @@ public class FileUploadAssessmentService extends AssessmentService {
             fileUploadSubmission.setResult(result);
             fileUploadSubmissionRepository.save(fileUploadSubmission);
         }
-        // Note: This also saves the feedback objects in the database because of the 'cascade =
-        // CascadeType.ALL' option.
+        // Note: This also saves the feedback objects in the database because of the 'cascade = CascadeType.ALL' option.
         return resultRepository.save(result);
     }
 

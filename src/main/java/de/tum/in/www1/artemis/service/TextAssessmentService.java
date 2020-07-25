@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import de.tum.in.www1.artemis.domain.*;
 import de.tum.in.www1.artemis.domain.participation.Participation;
@@ -46,7 +45,6 @@ public class TextAssessmentService extends AssessmentService {
      * @return the ResponseEntity with result as body
      * @throws BadRequestAlertException on invalid feedback input
      */
-    @Transactional
     public Result submitAssessment(Long resultId, TextExercise textExercise, List<Feedback> textAssessment) throws BadRequestAlertException {
         Result result = saveAssessment(resultId, textAssessment);
         Double calculatedScore = calculateTotalScore(textAssessment);
@@ -62,7 +60,6 @@ public class TextAssessmentService extends AssessmentService {
      * @return the ResponseEntity with result as body
      * @throws BadRequestAlertException on invalid feedback input
      */
-    @Transactional
     public Result saveAssessment(Long resultId, List<Feedback> textAssessment) throws BadRequestAlertException {
 
         final boolean hasAssessmentWithTooLongReference = textAssessment.stream().filter(Feedback::hasReference)
@@ -72,7 +69,7 @@ public class TextAssessmentService extends AssessmentService {
                     "feedbackReferenceTooLong");
         }
 
-        Optional<Result> desiredResult = resultRepository.findById(resultId);
+        Optional<Result> desiredResult = resultRepository.findByIdWithEagerFeedbacks(resultId);
         Result result = desiredResult.orElseGet(Result::new);
 
         User user = userService.getUser();
