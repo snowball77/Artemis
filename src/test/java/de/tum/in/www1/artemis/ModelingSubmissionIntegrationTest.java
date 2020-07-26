@@ -503,7 +503,7 @@ public class ModelingSubmissionIntegrationTest extends AbstractSpringIntegration
         ModelingSubmission submission = ModelFactory.generateModelingSubmission(validModel, true);
         database.addModelingSubmission(classExercise, submission, "student1");
 
-        request.get("/api/exercises/" + classExercise.getId() + "/modeling-submission-without-assessment", HttpStatus.NOT_FOUND, ModelingSubmission.class);
+        request.get("/api/exercises/" + classExercise.getId() + "/modeling-submission-without-assessment", HttpStatus.FORBIDDEN, ModelingSubmission.class);
     }
 
     @Test
@@ -604,8 +604,7 @@ public class ModelingSubmissionIntegrationTest extends AbstractSpringIntegration
         // creating exercise
         ExerciseGroup exerciseGroup = exam.getExerciseGroups().get(0);
 
-        ModelingExercise modelingExercise = ModelFactory.generateModelingExerciseForExam(exam.getStartDate(), exam.getEndDate(), exam.getEndDate().plusWeeks(2),
-                DiagramType.ActivityDiagram, exerciseGroup);
+        ModelingExercise modelingExercise = ModelFactory.generateModelingExerciseForExam(DiagramType.ActivityDiagram, exerciseGroup);
         exerciseGroup.addExercise(modelingExercise);
         exerciseGroupRepository.save(exerciseGroup);
         modelingExercise = exerciseRepo.save(modelingExercise);
