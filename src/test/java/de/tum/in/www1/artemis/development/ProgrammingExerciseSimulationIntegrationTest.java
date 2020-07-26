@@ -1,4 +1,4 @@
-package de.tum.in.www1.artemis.programmingexercise.simulation;
+package de.tum.in.www1.artemis.development;
 
 import static de.tum.in.www1.artemis.web.rest.ProgrammingExerciseResource.Endpoints.ROOT;
 import static de.tum.in.www1.artemis.web.rest.ProgrammingExerciseSimulationResource.Endpoints.EXERCISES_SIMULATION;
@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import de.tum.in.www1.artemis.AbstractSpringDevelopmentTest;
 import de.tum.in.www1.artemis.domain.Course;
 import de.tum.in.www1.artemis.domain.ProgrammingExercise;
 import de.tum.in.www1.artemis.domain.enumeration.ExerciseMode;

@@ -90,12 +90,15 @@ springBoot {
     mainClassName = "de.tum.in.www1.artemis.ArtemisApp"
 }
 
-// Execute the test cases: ./gradlew executeTests
+// Execute all test cases: ./gradlew executeAllTests
 
 test {
     useJUnitPlatform()
     exclude "**/*IT*", "**/*IntTest*", "**/*CucumberIT*"
     testLogging.showStandardStreams = true
+    if (System.properties['test.profile'] == 'important') {
+        exclude '**/development/*', '**/jenkinsgitlab/*'
+    }
 
     // uncomment if the tests reports are not generated
     // see https://github.com/jhipster/generator-jhipster/pull/2771 and https://github.com/jhipster/generator-jhipster/pull/4484
@@ -283,8 +286,12 @@ task cleanResources(type: Delete) {
     delete "build/resources"
 }
 
-task executeTests (type: Exec) {
+task executeAllTests (type: Exec) {
     commandLine "./gradlew", "test", "-x", "webpack"
+}
+
+task executeTests (type: Exec) {
+    commandLine "./gradlew", "test", "-Dtest.profile=important", "-x", "webpack"
 }
 
 // Taken from here: https://stackoverflow.com/questions/3963708/gradle-how-to-display-test-results-in-the-console-in-real-time
@@ -358,7 +365,8 @@ task buildJarForDocker (type: Exec) {
 // Available commands:
 //
 // 1) Build production:                             ./gradlew -Pprod -Pwar clean bootWar
-// 2) Execute tests with code coverage report:      ./gradlew executeTests jacocoTestReport -x yarn_install -x webpack
+// 2) Execute all tests with coverage report:       ./gradlew executeAllTests jacocoTestReport -x yarn_install -x webpack
+// 2) Execute important tests with coverage report: ./gradlew executeTests jacocoTestReport -x yarn_install -x webpack
 // 2b) Run a single test:                           ./gradlew test --tests ExamIntegrationTest or ./gradlew test --tests ExamIntegrationTest.testGetExamScore
 // 3) Check Java code format:                       ./gradlew spotlessCheck -x yarn_install -x webpack
 // 4) Apply Java code formatter:                    ./gradlew spotlessApply -x yarn_install -x webpack

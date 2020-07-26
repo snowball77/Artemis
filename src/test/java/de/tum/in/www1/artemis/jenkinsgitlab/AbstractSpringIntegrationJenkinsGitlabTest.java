@@ -1,4 +1,4 @@
-package de.tum.in.www1.artemis;
+package de.tum.in.www1.artemis.jenkinsgitlab;
 
 import org.junit.jupiter.api.AfterEach;
 import org.mockito.Mockito;
