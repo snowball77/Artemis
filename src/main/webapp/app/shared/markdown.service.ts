@@ -7,12 +7,17 @@ import { escapeStringForUseInRegex } from 'app/shared/util/global.utils';
 import { ExplanationCommand } from 'app/shared/markdown-editor/domainCommands/explanation.command';
 import { HintCommand } from 'app/shared/markdown-editor/domainCommands/hint.command';
 import { TextHintExplanationInterface } from 'app/entities/quiz/quiz-question.model';
+import { SERVER_API_URL } from 'app/app.constants';
+import { HttpClient, HttpParameterCodec, HttpParams } from '@angular/common/http';
+import { Cacheable } from 'ngx-cacheable';
 
 @Injectable({ providedIn: 'root' })
 export class ArtemisMarkdownService {
     static hintOrExpRegex = new RegExp(escapeStringForUseInRegex(`${ExplanationCommand.identifier}`) + '|' + escapeStringForUseInRegex(`${HintCommand.identifier}`), 'g');
 
-    constructor(private sanitizer: DomSanitizer) {}
+    private resourceUrl = SERVER_API_URL + 'api/markdown';
+
+    constructor(private sanitizer: DomSanitizer, private http: HttpClient) {}
 
     /**
      * Parse the markdown text and apply the result to the target object's data
@@ -138,5 +143,24 @@ export class ArtemisMarkdownService {
             backslashEscapesHTMLTags: true,
         });
         return converter.makeMarkdown(htmlText);
+    }
+
+    /**
+     * Requests the plantImg file as arraybuffer and converts it to base64.
+     * @param plantImage - definition obtained by parsing the README markdown file.
+     *
+     * Note: we cache up to 100 results in 1 hour so that they do not need to be loaded several time
+     */
+    @Cacheable({
+        /** Cacheable configuration **/
+        maxCacheCount: 100,
+        maxAge: 3600000, // ms
+        slidingExpiration: true,
+    })
+    getPlantMarkdownImage(plantImage: string) {
+        return this.http.get(`${this.resourceUrl}`, {
+            params: new HttpParams().set('plantimg', plantImage),
+            responseType: 'text',
+        });
     }
 }

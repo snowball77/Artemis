@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SERVER_API_URL } from 'app/app.constants';
 import { HttpClient, HttpParameterCodec, HttpParams } from '@angular/common/http';
+import { HttpUrlCustomEncoder } from 'app/shared/util/request-util';
 import { Cacheable } from 'ngx-cacheable';
 import { Observable } from 'rxjs';
 
@@ -59,43 +60,5 @@ export class ProgrammingExercisePlantUmlService {
 
     private convertPlantUmlResponseToBase64(res: any): string {
         return Buffer.from(res, 'binary').toString('base64');
-    }
-}
-
-/**
- * @class HttpUrlCustomEncoder
- * @desc Custom HttpParamEncoder implementation which defaults to using encodeURIComponent to encode params
- */
-export class HttpUrlCustomEncoder implements HttpParameterCodec {
-    /**
-     * Encodes key.
-     * @param k - key to be encoded.
-     */
-    encodeKey(k: string): string {
-        return encodeURIComponent(k);
-    }
-
-    /**
-     * Encodes value.
-     * @param v - value to be encoded.
-     */
-    encodeValue(v: string): string {
-        return encodeURIComponent(v);
-    }
-
-    /**
-     * Decodes key.
-     * @param k - key to be decoded.
-     */
-    decodeKey(k: string): string {
-        return decodeURIComponent(k);
-    }
-
-    /**
-     * Decodes value.
-     * @param v - value to be decoded.
-     */
-    decodeValue(v: string) {
-        return decodeURIComponent(v);
     }
 }
