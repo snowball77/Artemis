@@ -9,6 +9,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import de.tum.in.www1.artemis.web.rest.dto.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,8 +33,6 @@ import de.tum.in.www1.artemis.repository.ExamRepository;
 import de.tum.in.www1.artemis.service.*;
 import de.tum.in.www1.artemis.service.dto.StudentDTO;
 import de.tum.in.www1.artemis.service.messaging.InstanceMessageSendService;
-import de.tum.in.www1.artemis.web.rest.dto.ExamInformationDTO;
-import de.tum.in.www1.artemis.web.rest.dto.ExamScoresDTO;
 import de.tum.in.www1.artemis.web.rest.errors.BadRequestAlertException;
 import de.tum.in.www1.artemis.web.rest.util.HeaderUtil;
 
@@ -77,10 +76,20 @@ public class ExamResource {
 
     private final TutorDashboardService tutorDashboardService;
 
+    private final SubmissionService submissionService;
+
+    private final ProgrammingExerciseService programmingExerciseService;
+
+    private final ComplaintService complaintService;
+
+    private final ResultService resultService;
+
+    private final TutorLeaderboardService tutorLeaderboardService;
+
     public ExamResource(UserService userService, CourseService courseService, ExamRepository examRepository, ExamService examService, ExamAccessService examAccessService,
-            ExerciseService exerciseService, AuditEventRepository auditEventRepository, InstanceMessageSendService instanceMessageSendService,
-            StudentExamService studentExamService, ParticipationService participationService, AuthorizationCheckService authCheckService,
-            TutorParticipationService tutorParticipationService, TutorDashboardService tutorDashboardService) {
+                        ExerciseService exerciseService, AuditEventRepository auditEventRepository, InstanceMessageSendService instanceMessageSendService,
+                        StudentExamService studentExamService, ParticipationService participationService, AuthorizationCheckService authCheckService,
+                        TutorParticipationService tutorParticipationService, TutorDashboardService tutorDashboardService, SubmissionService submissionService, ProgrammingExerciseService programmingExerciseService, ComplaintService complaintService, ResultService resultService, TutorLeaderboardService tutorLeaderboardService) {
         this.userService = userService;
         this.courseService = courseService;
         this.examRepository = examRepository;
@@ -94,6 +103,11 @@ public class ExamResource {
         this.authCheckService = authCheckService;
         this.tutorParticipationService = tutorParticipationService;
         this.tutorDashboardService = tutorDashboardService;
+        this.submissionService = submissionService;
+        this.programmingExerciseService = programmingExerciseService;
+        this.complaintService = complaintService;
+        this.resultService = resultService;
+        this.tutorLeaderboardService = tutorLeaderboardService;
     }
 
     /**
@@ -716,4 +730,46 @@ public class ExamResource {
         }
     }
 
+    /**
+     * GET /courses/:courseId/stats-for-tutor-dashboard A collection of useful statistics for the tutor exam dashboard, including: - number of submissions to the course - number of
+     * assessments - number of assessments assessed by the tutor - number of complaints
+     *
+     * @param courseId the id of the course to retrieve
+     * @param examId the id of the exam to retrieve
+     * @return data about an exam including all exercises, plus some data for the tutor as tutor status for assessment
+     */
+    @GetMapping("/courses/{courseId}/exams/{examId}/stats-for-tutor-dashboard")
+    @PreAuthorize("hasAnyRole('TA', 'INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<StatsForInstructorDashboardDTO> getStatsForTutorDashboard(@PathVariable long courseId, @PathVariable long examId) {
+        log.debug("REST request /courses/{courseId}/stats-for-tutor-dashboard");
+
+        Course course = courseService.findOne(courseId);
+        Exam exam = examService.findOne(examId);
+        User user = userService.getUserWithGroupsAndAuthorities();
+        if (!authCheckService.isAtLeastTeachingAssistantInCourse(course, user)) {
+            return forbidden();
+        }
+        StatsForInstructorDashboardDTO stats = new StatsForInstructorDashboardDTO();
+
+        final long numberOfInTimeSubmissions = submissionService.countInTimeSubmissionsForCourse(exam.getCourse().getId())
+            + programmingExerciseService.countSubmissionsByCourseIdSubmitted(exam.getCourse().getId());
+        final long numberOfLateSubmissions = submissionService.countLateSubmissionsForCourse(exam.getCourse().getId());
+
+        stats.setNumberOfSubmissions(new DueDateStat(numberOfInTimeSubmissions, numberOfLateSubmissions));
+        stats.setNumberOfAssessments(resultService.countNumberOfAssessments(exam.getCourse().getId()));
+
+        final long numberOfMoreFeedbackRequests = complaintService.countMoreFeedbackRequestsByCourseId(exam.getCourse().getId());
+        stats.setNumberOfMoreFeedbackRequests(numberOfMoreFeedbackRequests);
+
+        final long numberOfComplaints = complaintService.countComplaintsByCourseId(exam.getCourse().getId());
+        stats.setNumberOfComplaints(numberOfComplaints);
+
+        final long numberOfAssessmentLocks = submissionService.countSubmissionLocks(exam.getCourse().getId());
+        stats.setNumberOfAssessmentLocks(numberOfAssessmentLocks);
+
+        List<TutorLeaderboardDTO> leaderboardEntries = tutorLeaderboardService.getExamLeaderboard(exam);
+        stats.setTutorLeaderboardEntries(leaderboardEntries);
+
+        return ResponseEntity.ok(stats);
+    }
 }

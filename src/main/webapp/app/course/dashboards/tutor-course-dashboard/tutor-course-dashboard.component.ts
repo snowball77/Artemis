@@ -114,6 +114,34 @@ export class TutorCourseDashboardComponent implements OnInit, AfterViewInit {
 
                 // TODO: implement some tutor stats here similar to the ones below but based on the exam and not the course
             });
+
+            this.examManagementService.getStatsForTutors(this.courseId, examId).subscribe(
+                (res: HttpResponse<StatsForDashboard>) => {
+                    this.stats = StatsForDashboard.from(res.body!);
+                    this.numberOfSubmissions = this.stats.numberOfSubmissions;
+                    this.numberOfAssessments = this.stats.numberOfAssessments;
+                    this.numberOfComplaints = this.stats.numberOfComplaints;
+                    this.numberOfOpenComplaints = this.stats.numberOfOpenComplaints;
+                    this.numberOfMoreFeedbackRequests = this.stats.numberOfMoreFeedbackRequests;
+                    this.numberOfOpenMoreFeedbackRequests = this.stats.numberOfOpenMoreFeedbackRequests;
+                    this.numberOfAssessmentLocks = this.stats.numberOfAssessmentLocks;
+                    const tutorLeaderboardEntry = this.stats.tutorLeaderboardEntries.find((entry) => entry.userId === this.tutor.id);
+                    if (tutorLeaderboardEntry) {
+                        this.numberOfTutorAssessments = tutorLeaderboardEntry.numberOfAssessments;
+                        this.numberOfTutorComplaints = tutorLeaderboardEntry.numberOfTutorComplaints;
+                        this.numberOfTutorMoreFeedbackRequests = tutorLeaderboardEntry.numberOfTutorMoreFeedbackRequests;
+                    } else {
+                        this.numberOfTutorAssessments = 0;
+                        this.numberOfTutorComplaints = 0;
+                        this.numberOfTutorMoreFeedbackRequests = 0;
+                    }
+
+                    if (this.numberOfSubmissions.total > 0) {
+                        this.totalAssessmentPercentage = Math.floor((this.numberOfAssessments.total / this.numberOfSubmissions.total) * 100);
+                    }
+                },
+                (response: string) => this.onError(response),
+            );
         } else {
             this.courseService.getCourseWithInterestingExercisesForTutors(this.courseId).subscribe(
                 (res: HttpResponse<Course>) => {
