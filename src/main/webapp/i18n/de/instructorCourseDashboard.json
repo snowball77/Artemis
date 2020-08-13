@@ -24,6 +24,7 @@
             "exerciseDashboard": "Übungs-Dashboard",
             "tutorLeaderboard": {
                 "courseTitle": "Tutor Kurs Bestenliste",
+                "examTitle": "Tutor Exam Bestenliste",
                 "id": "ID",
                 "name": "Name",
                 "numberOfAssessments": "Assessments",

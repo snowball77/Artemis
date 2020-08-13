@@ -68,6 +68,15 @@
                             </a>
                         </td>
                     </ng-container>
+
+                    <ng-container *ngIf="exam">
+                        <td>
+                            <span>{{ tutor.numberOfAcceptedComplaints }}</span>
+                        </td>
+                        <td>
+                            <span>{{ tutor.numberOfNotAnsweredMoreFeedbackRequests }}</span>
+                        </td>
+                    </ng-container>
                 </ng-template>
 
                 <td>{{ tutor.numberOfComplaintResponses }}</td>
