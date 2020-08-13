@@ -228,11 +228,11 @@ export class ExamManagementService {
     }
 
     /**
-     * returns the stats of the exam with the provided unique identifier for the tutor dashboard
+     * returns the stats of the exam with the provided unique identifier for the tutor exam dashboard
      * @param examId - the id of the exam
      */
     getStatsForTutors(courseId: number, examId: number): Observable<HttpResponse<StatsForDashboard>> {
-        return this.http.get<StatsForDashboard>(`${this.resourceUrl}/${courseId}/exams/${examId}/stats-for-tutor-dashboard`, { observe: 'response' });
+        return this.http.get<StatsForDashboard>(`${this.resourceUrl}/${courseId}/exams/${examId}/stats-for-tutor-exam-dashboard`, { observe: 'response' });
     }
 
     private static convertDateFromClient(exam: Exam): Exam {

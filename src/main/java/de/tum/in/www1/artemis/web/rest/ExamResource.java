@@ -62,8 +62,6 @@ public class ExamResource {
 
     private final ExamAccessService examAccessService;
 
-    private final ExerciseService exerciseService;
-
     private final ParticipationService participationService;
 
     private final AuditEventRepository auditEventRepository;
@@ -87,15 +85,15 @@ public class ExamResource {
     private final TutorLeaderboardService tutorLeaderboardService;
 
     public ExamResource(UserService userService, CourseService courseService, ExamRepository examRepository, ExamService examService, ExamAccessService examAccessService,
-                        ExerciseService exerciseService, AuditEventRepository auditEventRepository, InstanceMessageSendService instanceMessageSendService,
-                        StudentExamService studentExamService, ParticipationService participationService, AuthorizationCheckService authCheckService,
-                        TutorParticipationService tutorParticipationService, TutorDashboardService tutorDashboardService, SubmissionService submissionService, ProgrammingExerciseService programmingExerciseService, ComplaintService complaintService, ResultService resultService, TutorLeaderboardService tutorLeaderboardService) {
+                        AuditEventRepository auditEventRepository, InstanceMessageSendService instanceMessageSendService, StudentExamService studentExamService,
+                        ParticipationService participationService, AuthorizationCheckService authCheckService, TutorParticipationService tutorParticipationService,
+                        TutorDashboardService tutorDashboardService, SubmissionService submissionService, ProgrammingExerciseService programmingExerciseService,
+                        ComplaintService complaintService, ResultService resultService, TutorLeaderboardService tutorLeaderboardService) {
         this.userService = userService;
         this.courseService = courseService;
         this.examRepository = examRepository;
         this.examService = examService;
         this.examAccessService = examAccessService;
-        this.exerciseService = exerciseService;
         this.auditEventRepository = auditEventRepository;
         this.instanceMessageSendService = instanceMessageSendService;
         this.studentExamService = studentExamService;
@@ -731,21 +729,22 @@ public class ExamResource {
     }
 
     /**
-     * GET /courses/:courseId/stats-for-tutor-dashboard A collection of useful statistics for the tutor exam dashboard, including: - number of submissions to the course - number of
+     * GET /courses/:courseId/stats-for-tutor-exam-dashboard A collection of useful statistics for the tutor exam dashboard, including: - number of submissions to the course - number of
      * assessments - number of assessments assessed by the tutor - number of complaints
      *
      * @param courseId the id of the course to retrieve
      * @param examId the id of the exam to retrieve
      * @return data about an exam including all exercises, plus some data for the tutor as tutor status for assessment
      */
-    @GetMapping("/courses/{courseId}/exams/{examId}/stats-for-tutor-dashboard")
+    @GetMapping("/courses/{courseId}/exams/{examId}/stats-for-tutor-exam-dashboard")
     @PreAuthorize("hasAnyRole('TA', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<StatsForInstructorDashboardDTO> getStatsForTutorDashboard(@PathVariable long courseId, @PathVariable long examId) {
-        log.debug("REST request /courses/{courseId}/stats-for-tutor-dashboard");
+        log.debug("REST request /courses/{courseId}/exams/{examId}/stats-for-tutor-exam-dashboard");
 
         Course course = courseService.findOne(courseId);
         Exam exam = examService.findOne(examId);
         User user = userService.getUserWithGroupsAndAuthorities();
+
         if (!authCheckService.isAtLeastTeachingAssistantInCourse(course, user)) {
             return forbidden();
         }

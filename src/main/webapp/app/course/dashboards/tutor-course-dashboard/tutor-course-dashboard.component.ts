@@ -111,8 +111,6 @@ export class TutorCourseDashboardComponent implements OnInit, AfterViewInit {
                 });
 
                 this.extractExercises(exercises);
-
-                // TODO: implement some tutor stats here similar to the ones below but based on the exam and not the course
             });
 
             this.examManagementService.getStatsForTutors(this.courseId, examId).subscribe(
