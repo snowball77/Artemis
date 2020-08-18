@@ -1,0 +1,43 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet author="sebastianjagla" id="20200817200300">
+        <createTable tableName="tutor_scores">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="tutor_scoresPK"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assessments" type="BIGINT" defaultValue="0"/>
+            <column name="assessments_points" type="double" defaultValue="0"/>
+            <column name="all_complaints" type="BIGINT" defaultValue="0"/>
+            <column name="accepted_complaints" type="decimal" defaultValue="0"/>
+            <column name="complaints_points" type="double" defaultValue="0"/>
+            <column name="complaint_responses" type="BIGINT" defaultValue="0"/>
+            <column name="complaint_responses_points" type="double" defaultValue="0"/>
+            <column name="all_feedback_requests" type="BIGINT" defaultValue="0"/>
+            <column name="not_answered_feedback_requests" type="decimal" defaultValue="0"/>
+            <column name="feedback_requests_points" type="double" defaultValue="0"/>
+            <column name="answered_feedback_requests" type="BIGINT" defaultValue="0"/>
+            <column name="answered_feedback_requests_points" type="double" defaultValue="0"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="sebastianjagla" id="20200817200301">
+        <!-- fill the table with empty objects -->
+        <sql>
+            insert into tutor_scores (user_id, exercise_id)
+            select u.id, e.id
+            from exercise e, course c, user_groups ug, jhi_user u
+            where e.course_id = c.id and c.teaching_assistant_group_name = ug.groups and ug.user_id = u.id
+        </sql>
+        <sql>
+            insert into tutor_scores (user_id, exercise_id)
+            select u.id, e.id
+            from exercise e, exercise_group eg, exam ex, course c, user_groups ug, jhi_user u
+            where e.exercise_group_id = eg.id and eg.exam_id = ex.id and ex.course_id = c.id and c.teaching_assistant_group_name = ug.groups and ug.user_id = u.id
+        </sql>
+    </changeSet>
+</databaseChangeLog>
