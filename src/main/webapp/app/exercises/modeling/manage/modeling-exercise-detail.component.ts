@@ -82,7 +82,7 @@ export class ModelingExerciseDetailComponent implements OnInit, OnDestroy {
 
                 const courseId = this.modelingExercise.course ? this.modelingExercise.course.id : this.modelingExercise.exerciseGroup?.exam?.course?.id;
 
-                const baseUrl = location.origin + '#/course-management/';
+                const baseUrl = location.origin + '/#/course-management/';
 
                 const csvData = data.map((comparisonResult) => {
                     return Object.assign({
