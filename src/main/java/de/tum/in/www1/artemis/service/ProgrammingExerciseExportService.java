@@ -24,7 +24,6 @@ import javax.xml.xpath.XPathException;
 import javax.xml.xpath.XPathFactory;
 
 import jplag.ExitException;
-import jplag.Program;
 import jplag.options.CommandLineOptions;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -49,6 +48,7 @@ import de.tum.in.www1.artemis.exception.GitException;
 import de.tum.in.www1.artemis.repository.ProgrammingExerciseRepository;
 import de.tum.in.www1.artemis.service.connectors.GitService;
 import de.tum.in.www1.artemis.service.connectors.VersionControlService;
+import de.tum.in.www1.artemis.service.plagiarism.JPlagProgram;
 import de.tum.in.www1.artemis.web.rest.dto.RepositoryExportOptionsDTO;
 import de.tum.in.www1.artemis.web.rest.errors.BadRequestAlertException;
 
@@ -189,7 +189,7 @@ public class ProgrammingExerciseExportService {
         final var args = new String[] { "-l", programmingLanguage, "-r", outputFolder, "-s", repoFolder, "-bc", templateRepoName, "-vq" };
 
         final var options = new CommandLineOptions(args, null);
-        final var program = new Program(options);
+        final var program = new JPlagProgram(options);
         program.run();
 
         final var zipFilePath = Paths.get(REPO_DOWNLOAD_CLONE_PATH, programmingExercise.getCourseViaExerciseGroupOrCourseMember().getShortName() + "-"
