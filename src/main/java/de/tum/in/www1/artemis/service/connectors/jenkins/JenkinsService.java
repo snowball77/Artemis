@@ -1,6 +1,6 @@
 package de.tum.in.www1.artemis.service.connectors.jenkins;
 
-import static de.tum.in.www1.artemis.config.Constants.FEEDBACK_DETAIL_TEXT_MAX_CHARACTERS;
+import static de.tum.in.www1.artemis.config.Constants.*;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -31,6 +31,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,12 +59,6 @@ import de.tum.in.www1.artemis.service.util.XmlFileUtils;
 public class JenkinsService implements ContinuousIntegrationService {
 
     private static final Logger log = LoggerFactory.getLogger(JenkinsService.class);
-
-    @Value("${artemis.continuous-integration.user}")
-    private String username;
-
-    @Value("${artemis.continuous-integration.password}")
-    private String password;
 
     @Value("${artemis.continuous-integration.url}")
     private URL JENKINS_SERVER_URL;
@@ -95,8 +90,8 @@ public class JenkinsService implements ContinuousIntegrationService {
             final var jobConfig = configBuilder.buildBasicConfig(testRepositoryURL, repositoryURL);
             planKey = exercise.getProjectKey() + "-" + planKey;
 
-            jenkinsServer.createJob(folder(exercise.getProjectKey()), planKey, writeXmlToString(jobConfig), useCrumb);
-            job(exercise.getProjectKey(), planKey).build(useCrumb);
+            jenkinsServer.createJob(getFolderJob(exercise.getProjectKey()), planKey, writeXmlToString(jobConfig), useCrumb);
+            getJob(exercise.getProjectKey(), planKey).build(useCrumb);
         }
         catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -114,7 +109,7 @@ public class JenkinsService implements ContinuousIntegrationService {
         final var cleanTargetName = getCleanPlanName(targetPlanName);
         final var sourcePlanKey = sourceProjectKey + "-" + sourcePlanName;
         final var targetPlanKey = targetProjectKey + "-" + cleanTargetName;
-        final var jobXml = jobXml(sourceProjectKey, sourcePlanKey);
+        final var jobXml = getJobXmlForBuildPlanWith(sourceProjectKey, sourcePlanKey);
         saveJobXml(jobXml, targetProjectKey, targetPlanKey);
 
         return targetPlanKey;
@@ -129,24 +124,77 @@ public class JenkinsService implements ContinuousIntegrationService {
     public void configureBuildPlan(ProgrammingExerciseParticipation participation) {
         final var projectKey = participation.getProgrammingExercise().getProjectKey();
         final var planKey = participation.getBuildPlanId();
-        updatePlanRepository(projectKey, planKey, null /* not important */, null /* not important */, participation.getRepositoryUrl(), Optional.empty());
+        updatePlanRepository(projectKey, planKey, ASSIGNMENT_REPO_NAME, null /* not important */, participation.getRepositoryUrl(), Optional.empty());
         enablePlan(projectKey, planKey);
     }
 
     // TODO this was a bad design choice. We should only have one configureBuildPlan method i.m.o
     @Override
     public void updatePlanRepository(String projectKey, String planName, String repoNameInCI, String vcsProject, String vcsRepositoryUrl, Optional<List<String>> triggeredBy) {
+
         // remove potential username from repo URL. Jenkins uses the Artemis Admin user and will fail if other usernames are in the URL
         final var repoUrl = vcsRepositoryUrl.replaceAll("(https?://)(.*@)(.*)", "$1$3");
-        final var config = jobXml(projectKey, planName);
-        final var urlElements = config.getElementsByTagName("url");
-        if (urlElements.getLength() != 2) {
+        final var jobXmlDocument = getJobXmlForBuildPlanWith(projectKey, planName);
+        final var remoteUrlNode = findUserRemoteConfigFor(jobXmlDocument, repoNameInCI);
+        if (remoteUrlNode == null || remoteUrlNode.getFirstChild() == null) {
+            throw new IllegalArgumentException("Url to replace not found in job xml document");
+        }
+        remoteUrlNode.getFirstChild().setNodeValue(repoUrl);
+        final var errorMessage = "Error trying to configure build plan in Jenkins " + planName;
+        postXml(jobXmlDocument, String.class, HttpStatus.OK, errorMessage, Endpoint.PLAN_CONFIG, projectKey, planName);
+    }
+
+    private org.w3c.dom.Node findUserRemoteConfigFor(Document jobXmlDocument, String repoNameInCI) {
+        final var userRemoteConfigs = jobXmlDocument.getElementsByTagName("hudson.plugins.git.UserRemoteConfig");
+        if (userRemoteConfigs.getLength() != 2) {
             throw new IllegalArgumentException("Configuration of build plans currently only supports a model with two repositories, ASSIGNMENT and TESTS");
         }
-        urlElements.item(1).getFirstChild().setNodeValue(repoUrl);
+        var firstUserRemoteConfig = userRemoteConfigs.item(0).getChildNodes();
+        var urlElement = findUrlElement(firstUserRemoteConfig, repoNameInCI);
+        if (urlElement != null) {
+            return urlElement;
+        }
+        var secondUserRemoteConfig = userRemoteConfigs.item(1).getChildNodes();
+        urlElement = findUrlElement(secondUserRemoteConfig, repoNameInCI);
+        if (urlElement != null) {
+            return urlElement;
+        }
+        return null;
+    }
 
-        final var errorMessage = "Error trying to configure build plan in Jenkins " + planName;
-        postXml(config, String.class, HttpStatus.OK, errorMessage, Endpoint.PLAN_CONFIG, projectKey, planName);
+    private org.w3c.dom.Node findUrlElement(NodeList nodeList, String repoNameInCI) {
+        boolean found = false;
+        org.w3c.dom.Node urlNode = null;
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            var childElement = nodeList.item(i);
+            if ("name".equalsIgnoreCase(childElement.getNodeName())) {
+                var nameValue = childElement.hasChildNodes() ? childElement.getFirstChild().getNodeValue() : null;
+                // this name was added recently, so we cannot assume that all job xml files include this name
+                if (repoNameInCI.equalsIgnoreCase(nameValue)) {
+                    found = true;
+                }
+            }
+            else if ("url".equalsIgnoreCase(childElement.getNodeName())) {
+                urlNode = childElement;
+                if (!found) {
+                    // fallback for old xmls
+                    var urlValue = childElement.hasChildNodes() ? childElement.getFirstChild().getNodeValue() : null;
+                    if (urlValue != null && repoNameInCI.equals(ASSIGNMENT_REPO_NAME) && ((urlValue.contains("-exercise.git") || (urlValue.contains("-solution.git"))))) {
+                        found = true;
+                    }
+                    else if (urlValue != null && repoNameInCI.equals(TEST_REPO_NAME) && urlValue.contains("-tests.git")) {
+                        found = true;
+                    }
+                }
+            }
+        }
+
+        if (found && urlNode != null) {
+            return urlNode;
+        }
+        else {
+            return null;
+        }
     }
 
     @Override
@@ -155,7 +203,7 @@ public class JenkinsService implements ContinuousIntegrationService {
         final var planKey = participation.getBuildPlanId();
 
         try {
-            job(projectKey, planKey).build(useCrumb);
+            getJob(projectKey, planKey).build(useCrumb);
         }
         catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -177,7 +225,7 @@ public class JenkinsService implements ContinuousIntegrationService {
     @Override
     public void deleteBuildPlan(String projectKey, String buildPlanId) {
         try {
-            jenkinsServer.deleteJob(folder(projectKey), buildPlanId, useCrumb);
+            jenkinsServer.deleteJob(getFolderJob(projectKey), buildPlanId, useCrumb);
         }
         catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -284,7 +332,7 @@ public class JenkinsService implements ContinuousIntegrationService {
 
     @Override
     public BuildStatus getBuildStatus(ProgrammingExerciseParticipation participation) {
-        final var isQueued = job(participation.getProgrammingExercise().getProjectKey(), participation.getBuildPlanId()).isInQueue();
+        final var isQueued = getJob(participation.getProgrammingExercise().getProjectKey(), participation.getBuildPlanId()).isInQueue();
         if (isQueued) {
             return BuildStatus.QUEUED;
         }
@@ -305,7 +353,7 @@ public class JenkinsService implements ContinuousIntegrationService {
     @Override
     public boolean buildPlanIdIsValid(String projectKey, String buildPlanId) {
         try {
-            jobXml(projectKey, buildPlanId);
+            getJobXmlForBuildPlanWith(projectKey, buildPlanId);
             return true;
         }
         catch (Exception emAll) {
@@ -374,9 +422,13 @@ public class JenkinsService implements ContinuousIntegrationService {
     }
 
     @Override
-    public List<BuildLogEntry> getLatestBuildLogs(String projectKey, String buildPlanId) {
+    public List<BuildLogEntry> getLatestBuildLogs(ProgrammingSubmission programmingSubmission) {
+        ProgrammingExerciseParticipation programmingExerciseParticipation = (ProgrammingExerciseParticipation) programmingSubmission.getParticipation();
+        String projectKey = programmingExerciseParticipation.getProgrammingExercise().getProjectKey();
+        String buildPlanId = programmingExerciseParticipation.getBuildPlanId();
+
         try {
-            final var build = job(projectKey, buildPlanId).getLastBuild();
+            final var build = getJob(projectKey, buildPlanId).getLastBuild();
             final var logHtml = Jsoup.parse(build.details().getConsoleOutputHtml()).body();
             final var buildLog = new LinkedList<BuildLogEntry>();
             final var iterator = logHtml.childNodes().iterator();
@@ -448,18 +500,25 @@ public class JenkinsService implements ContinuousIntegrationService {
     @Override
     public String checkIfProjectExists(String projectKey, String projectName) {
         try {
-            folder(projectKey);
+            final var job = jenkinsServer.getJob(projectKey);
+            if (job == null) {
+                // means the project does not exist
+                return null;
+            }
+            else {
+                return "The project " + projectKey + " already exists in the CI Server. Please choose a different short name!";
+            }
         }
         catch (Exception emAll) {
-            return emAll.getMessage();
+            log.warn(emAll.getMessage());
+            // in case of an error message, we assume the project does not exist
+            return null;
         }
-
-        return null;
     }
 
     @Override
     public boolean isBuildPlanEnabled(String projectKey, String planId) {
-        return job(projectKey, planId).isBuildable();
+        return getJob(projectKey, planId).isBuildable();
     }
 
     @Override
@@ -502,13 +561,17 @@ public class JenkinsService implements ContinuousIntegrationService {
         }
     }
 
-    private FolderJob folder(String folderName) {
+    private FolderJob getFolderJob(String folderName) {
         try {
-            final var folder = jenkinsServer.getFolderJob(jenkinsServer.getJob(folderName));
-            if (!folder.isPresent()) {
+            final var job = jenkinsServer.getJob(folderName);
+            if (job == null) {
+                throw new JenkinsException("The job " + folderName + " does not exist!");
+            }
+            final var folderJob = jenkinsServer.getFolderJob(job);
+            if (!folderJob.isPresent()) {
                 throw new JenkinsException("Folder " + folderName + " does not exist!");
             }
-            return folder.get();
+            return folderJob.get();
         }
         catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -516,8 +579,8 @@ public class JenkinsService implements ContinuousIntegrationService {
         }
     }
 
-    private JobWithDetails job(String projectKey, String jobName) {
-        final var folder = folder(projectKey);
+    private JobWithDetails getJob(String projectKey, String jobName) {
+        final var folder = getFolderJob(projectKey);
         try {
             return jenkinsServer.getJob(folder, jobName);
         }
@@ -527,9 +590,9 @@ public class JenkinsService implements ContinuousIntegrationService {
         }
     }
 
-    private Document jobXml(String projectKey, String jobName) {
+    private Document getJobXmlForBuildPlanWith(String projectKey, String jobName) {
         try {
-            final var xmlString = jenkinsServer.getJobXml(folder(projectKey), jobName);
+            final var xmlString = jenkinsServer.getJobXml(getFolderJob(projectKey), jobName);
             return XmlFileUtils.readFromString(xmlString);
         }
         catch (IOException e) {
@@ -539,7 +602,7 @@ public class JenkinsService implements ContinuousIntegrationService {
     }
 
     private void saveJobXml(Document jobXml, String projectKey, String planName) {
-        final var folder = folder(projectKey);
+        final var folder = getFolderJob(projectKey);
         try {
             jenkinsServer.createJob(folder, planName, writeXmlToString(jobXml), useCrumb);
         }
@@ -600,7 +663,6 @@ public class JenkinsService implements ContinuousIntegrationService {
             final var transformer = tf.newTransformer();
             final var writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
-
             return writer.getBuffer().toString();
         }
         catch (TransformerException e) {

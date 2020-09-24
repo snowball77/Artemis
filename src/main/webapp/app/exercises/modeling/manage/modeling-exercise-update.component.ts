@@ -9,7 +9,7 @@ import { CourseManagementService } from 'app/course/manage/course-management.ser
 import { ExampleSubmissionService } from 'app/exercises/shared/example-submission/example-submission.service';
 import { MAX_SCORE_PATTERN } from 'app/app.constants';
 import { ExerciseService } from 'app/exercises/shared/exercise/exercise.service';
-import { ExerciseCategory, ExerciseMode } from 'app/entities/exercise.model';
+import { Exercise, ExerciseCategory, ExerciseMode } from 'app/entities/exercise.model';
 import { EditorMode } from 'app/shared/markdown-editor/markdown-editor.component';
 import { KatexCommand } from 'app/shared/markdown-editor/commands/katex.command';
 import { AlertService } from 'app/core/alert/alert.service';
@@ -103,6 +103,7 @@ export class ModelingExerciseUpdateComponent implements OnInit {
                         this.modelingExercise.mode = ExerciseMode.INDIVIDUAL;
                         this.modelingExercise.teamAssignmentConfig = null;
                         this.modelingExercise.teamMode = false;
+                        this.modelingExercise.assessmentType = AssessmentType.MANUAL;
                     }
                     if (this.isImport) {
                         if (this.isExamMode) {
@@ -153,11 +154,14 @@ export class ModelingExerciseUpdateComponent implements OnInit {
      * Sends a request to either update, create or import a modeling exercise
      */
     save(): void {
+        Exercise.sanitize(this.modelingExercise);
+
         this.isSaving = true;
         if (this.isImport) {
             this.subscribeToSaveResponse(this.modelingExerciseService.import(this.modelingExercise));
         } else if (this.modelingExercise.id !== undefined) {
             const requestOptions = {} as any;
+
             if (this.notificationText) {
                 requestOptions.notificationText = this.notificationText;
             }
@@ -223,7 +227,7 @@ export class ModelingExerciseUpdateComponent implements OnInit {
      */
     diagramTypeChanged() {
         const semiAutomaticSupportPossible = this.modelingExercise.diagramType === DiagramType.ClassDiagram || this.modelingExercise.diagramType === DiagramType.ActivityDiagram;
-        if (!semiAutomaticSupportPossible) {
+        if (this.isExamMode || !semiAutomaticSupportPossible) {
             this.modelingExercise.assessmentType = AssessmentType.MANUAL;
         }
     }

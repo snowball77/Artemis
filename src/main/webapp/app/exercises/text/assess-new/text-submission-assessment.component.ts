@@ -22,6 +22,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { NEW_ASSESSMENT_PATH } from 'app/exercises/text/assess-new/text-submission-assessment.route';
 import { StructuredGradingCriterionService } from 'app/exercises/shared/structured-grading-criterion/structured-grading-criterion.service';
 import { Course } from 'app/entities/course.model';
+import { assessmentNavigateBack } from 'app/exercises/shared/navigate-back.util';
 
 @Component({
     selector: 'jhi-text-submission-assessment',
@@ -45,7 +46,7 @@ export class TextSubmissionAssessmentComponent implements OnInit {
     unusedTextBlockRefs: TextBlockRef[];
     complaint: Complaint | null;
     totalScore: number;
-
+    isTestRun = false;
     isLoading: boolean;
     saveBusy: boolean;
     submitBusy: boolean;
@@ -89,6 +90,7 @@ export class TextSubmissionAssessmentComponent implements OnInit {
         private activatedRoute: ActivatedRoute,
         private router: Router,
         private location: Location,
+        private route: ActivatedRoute,
         private jhiAlertService: JhiAlertService,
         private accountService: AccountService,
         private assessmentsService: TextAssessmentsService,
@@ -134,6 +136,9 @@ export class TextSubmissionAssessmentComponent implements OnInit {
         // Used to check if the assessor is the current user
         const identity = await this.accountService.identity();
         this.userId = identity ? identity.id : null;
+        this.route.queryParamMap.subscribe((queryParams) => {
+            this.isTestRun = queryParams.get('testRun') === 'true';
+        });
 
         this.isAtLeastInstructor = this.accountService.hasAnyAuthorityDirect(['ROLE_ADMIN', 'ROLE_INSTRUCTOR']);
         this.activatedRoute.paramMap.subscribe((paramMap) => (this.exerciseId = Number(paramMap.get('exerciseId'))));
@@ -163,7 +168,7 @@ export class TextSubmissionAssessmentComponent implements OnInit {
         this.isLoading = false;
 
         // track feedback in athene
-        this.assessmentsService.trackAssessment(this.submission);
+        this.assessmentsService.trackAssessment(this.submission, 'start');
     }
 
     private updateUrlIfNeeded() {
@@ -190,7 +195,7 @@ export class TextSubmissionAssessmentComponent implements OnInit {
         }
 
         // track feedback in athene
-        this.assessmentsService.trackAssessment(this.submission);
+        this.assessmentsService.trackAssessment(this.submission, 'save');
 
         this.saveBusy = true;
         this.assessmentsService.save(this.exercise!.id, this.result!.id, this.assessments, this.textBlocksWithFeedback).subscribe(
@@ -213,7 +218,7 @@ export class TextSubmissionAssessmentComponent implements OnInit {
         }
 
         // track feedback in athene
-        this.assessmentsService.trackAssessment(this.submission);
+        this.assessmentsService.trackAssessment(this.submission, 'submit');
 
         this.submitBusy = true;
         this.assessmentsService.submit(this.exercise!.id, this.result!.id, this.assessments, this.textBlocksWithFeedback).subscribe(
@@ -271,14 +276,7 @@ export class TextSubmissionAssessmentComponent implements OnInit {
     }
 
     navigateBack() {
-        if (this.exercise && this.exercise.teamMode && this.course?.id && this.submission) {
-            const teamId = (this.submission.participation as StudentParticipation).team.id;
-            this.router.navigateByUrl(`/courses/${this.course?.id}/exercises/${this.exercise.id}/teams/${teamId}`);
-        } else if (this.exercise && !this.exercise.teamMode && this.course?.id) {
-            this.router.navigateByUrl(`/course-management/${this.course?.id}/exercises/${this.exercise.id}/tutor-dashboard`);
-        } else {
-            this.location.back();
-        }
+        assessmentNavigateBack(this.location, this.router, this.exercise, this.submission, this.isTestRun);
     }
 
     private computeTotalScore() {

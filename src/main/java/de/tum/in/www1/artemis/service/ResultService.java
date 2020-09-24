@@ -29,9 +29,6 @@ import de.tum.in.www1.artemis.service.connectors.LtiService;
 import de.tum.in.www1.artemis.web.rest.dto.DueDateStat;
 import de.tum.in.www1.artemis.web.rest.errors.EntityNotFoundException;
 
-/**
- * Created by Josias Montag on 06.10.16.
- */
 @Service
 public class ResultService {
 
@@ -59,6 +56,8 @@ public class ResultService {
 
     private final ComplaintResponseRepository complaintResponseRepository;
 
+    private final RatingRepository ratingRepository;
+
     private final SubmissionRepository submissionRepository;
 
     private final ComplaintRepository complaintRepository;
@@ -66,7 +65,8 @@ public class ResultService {
     public ResultService(UserService userService, ResultRepository resultRepository, Optional<ContinuousIntegrationService> continuousIntegrationService, LtiService ltiService,
             SimpMessageSendingOperations messagingTemplate, ObjectMapper objectMapper, ProgrammingExerciseTestCaseService testCaseService,
             ProgrammingSubmissionService programmingSubmissionService, FeedbackRepository feedbackRepository, WebsocketMessagingService websocketMessagingService,
-            ComplaintResponseRepository complaintResponseRepository, SubmissionRepository submissionRepository, ComplaintRepository complaintRepository) {
+            ComplaintResponseRepository complaintResponseRepository, SubmissionRepository submissionRepository, ComplaintRepository complaintRepository,
+            RatingRepository ratingRepository) {
         this.userService = userService;
         this.resultRepository = resultRepository;
         this.continuousIntegrationService = continuousIntegrationService;
@@ -80,6 +80,7 @@ public class ResultService {
         this.complaintResponseRepository = complaintResponseRepository;
         this.submissionRepository = submissionRepository;
         this.complaintRepository = complaintRepository;
+        this.ratingRepository = ratingRepository;
     }
 
     /**
@@ -315,6 +316,7 @@ public class ResultService {
     public void deleteResultWithComplaint(long resultId) {
         complaintResponseRepository.deleteByComplaint_Result_Id(resultId);
         complaintRepository.deleteByResult_Id(resultId);
+        ratingRepository.deleteByResult_Id(resultId);
         resultRepository.deleteById(resultId);
     }
 
@@ -354,9 +356,13 @@ public class ResultService {
      * Given an exerciseId, return the number of assessments for that exerciseId that have been completed (e.g. no draft!)
      *
      * @param exerciseId - the exercise we are interested in
+     * @param examMode should be used for exam exercises to ignore test run submissions
      * @return a number of assessments for the exercise
      */
-    public DueDateStat countNumberOfFinishedAssessmentsForExercise(Long exerciseId) {
+    public DueDateStat countNumberOfFinishedAssessmentsForExercise(Long exerciseId, boolean examMode) {
+        if (examMode) {
+            return new DueDateStat(resultRepository.countNumberOfFinishedAssessmentsForExerciseIgnoreTestRuns(exerciseId), 0L);
+        }
         return new DueDateStat(resultRepository.countNumberOfFinishedAssessmentsForExercise(exerciseId),
                 resultRepository.countNumberOfFinishedLateAssessmentsForExercise(exerciseId));
     }

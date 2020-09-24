@@ -122,11 +122,10 @@ public interface ContinuousIntegrationService {
     /**
      * Get the build logs of the latest CI build.
      *
-     * @param projectKey The key of the project under which the plan is stored
-     * @param buildPlanId to get the latest build logs
+     * @param programmingSubmission The programming for which the latest build logs should be retrieved
      * @return list of build log entries
      */
-    List<BuildLogEntry> getLatestBuildLogs(String projectKey, String buildPlanId);
+    List<BuildLogEntry> getLatestBuildLogs(ProgrammingSubmission programmingSubmission);
 
     /**
      * Get the build artifact (JAR/WAR), if any, of the latest build
@@ -149,7 +148,7 @@ public interface ContinuousIntegrationService {
      *
      * @param projectKey to check if a project with this unique key already exists
      * @param projectName to check if a project with the same name already exists
-     * @return true if the project exists, false otherwise
+     * @return an error message if the project exists, null otherwise
      */
     String checkIfProjectExists(String projectKey, String projectName);
 
@@ -240,31 +239,21 @@ public interface ContinuousIntegrationService {
 
             @Override
             public String forProgrammingLanguage(ProgrammingLanguage language) {
-                switch (language) {
-                    case JAVA:
-                    case PYTHON:
-                    case C:
-                    case HASKELL:
-                        return Constants.ASSIGNMENT_CHECKOUT_PATH;
-                    default:
-                        throw new IllegalArgumentException("Repository checkout path for assignment repo has not yet been defined for " + language);
-                }
+                return switch (language) {
+                    case JAVA, PYTHON, C, HASKELL -> Constants.ASSIGNMENT_CHECKOUT_PATH;
+                    default -> throw new IllegalArgumentException("Repository checkout path for assignment repo has not yet been defined for " + language);
+                };
             }
         },
         TEST {
 
             @Override
             public String forProgrammingLanguage(ProgrammingLanguage language) {
-                switch (language) {
-                    case JAVA:
-                    case PYTHON:
-                    case HASKELL:
-                        return "";
-                    case C:
-                        return Constants.TESTS_CHECKOUT_PATH;
-                    default:
-                        throw new IllegalArgumentException("Repository checkout path for test repo has not yet been defined for " + language);
-                }
+                return switch (language) {
+                    case JAVA, PYTHON, HASKELL -> "";
+                    case C -> Constants.TESTS_CHECKOUT_PATH;
+                    default -> throw new IllegalArgumentException("Repository checkout path for test repo has not yet been defined for " + language);
+                };
             }
         }
     }

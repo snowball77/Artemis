@@ -348,6 +348,7 @@ public class ProgrammingExerciseResource {
         if (errorMessageCI != null) {
             return Optional.of(ResponseEntity.badRequest().headers(HeaderUtil.createAlert(applicationName, errorMessageCI, "ciProjectExists")).body(null));
         }
+        // means the project does not exist in version control server and does not exist in continuous integration server
         return Optional.empty();
     }
 
@@ -727,7 +728,7 @@ public class ProgrammingExerciseResource {
 
         Course course = courseService.findOne(programmingExercise.getCourseViaExerciseGroupOrCourseMember().getId());
         User user = userService.getUserWithGroupsAndAuthorities();
-        if (!authCheckService.isInstructorInCourse(course, user) && !authCheckService.isAdmin()) {
+        if (!authCheckService.isInstructorInCourse(course, user) && !authCheckService.isAdmin(user)) {
             return forbidden();
         }
 
@@ -871,7 +872,7 @@ public class ProgrammingExerciseResource {
         ProgrammingExercise programmingExercise = programmingExerciseOptional.get();
         Course course = courseService.findOne(programmingExercise.getCourseViaExerciseGroupOrCourseMember().getId());
         User user = userService.getUserWithGroupsAndAuthorities();
-        if (!authCheckService.isInstructorInCourse(course, user) && !authCheckService.isAdmin()) {
+        if (!authCheckService.isInstructorInCourse(course, user) && !authCheckService.isAdmin(user)) {
             return forbidden();
         }
         if (programmingExercise.getPackageName() == null || programmingExercise.getPackageName().length() < 3) {
@@ -942,7 +943,7 @@ public class ProgrammingExerciseResource {
      */
     @GetMapping(Endpoints.PROGRAMMING_EXERCISES)
     @PreAuthorize("hasAnyRole('INSTRUCTOR, ADMIN')")
-    public ResponseEntity<SearchResultPageDTO> getAllExercisesOnPage(PageableSearchDTO<String> search) {
+    public ResponseEntity<SearchResultPageDTO<ProgrammingExercise>> getAllExercisesOnPage(PageableSearchDTO<String> search) {
         final var user = userService.getUserWithGroupsAndAuthorities();
         return ResponseEntity.ok(programmingExerciseService.getAllOnPageWithSize(search, user));
     }

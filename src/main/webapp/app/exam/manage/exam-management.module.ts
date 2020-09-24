@@ -30,6 +30,10 @@ import { StudentExamStatusComponent } from 'app/exam/manage/student-exams/studen
 import { StudentExamSummaryComponent } from 'app/exam/manage/student-exams/student-exam-summary.component';
 import { ArtemisParticipationSummaryModule } from 'app/exam/participate/summary/exam-participation-summary.module';
 import { ExamExerciseRowButtonsComponent } from 'app/exercises/shared/exam-exercise-row-buttons/exam-exercise-row-buttons.component';
+import { ArtemisProgrammingExerciseStatusModule } from 'app/exercises/programming/manage/status/programming-exercise-status.module';
+import { ProgrammingExerciseUtilsModule } from 'app/exercises/programming/shared/utils/programming-exercise-utils.module';
+import { TestRunManagementComponent } from 'app/exam/manage/test-runs/test-run-management.component';
+import { CreateTestRunModalComponent } from 'app/exam/manage/test-runs/create-test-run-modal.component';
 
 const ENTITY_STATES = [...examManagementState];
 
@@ -51,6 +55,8 @@ const ENTITY_STATES = [...examManagementState];
         ArtemisQuizManagementModule,
         MomentModule,
         ArtemisParticipationSummaryModule,
+        ArtemisProgrammingExerciseStatusModule,
+        ProgrammingExerciseUtilsModule,
     ],
     declarations: [
         ExamManagementComponent,
@@ -63,6 +69,8 @@ const ENTITY_STATES = [...examManagementState];
         ExamStudentsComponent,
         StudentExamStatusComponent,
         StudentExamsComponent,
+        TestRunManagementComponent,
+        CreateTestRunModalComponent,
         StudentsExamImportDialogComponent,
         StudentsExamImportButtonComponent,
         StudentExamDetailComponent,

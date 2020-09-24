@@ -16,8 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -37,7 +35,6 @@ import de.tum.in.www1.artemis.domain.exam.ExerciseGroup;
 import de.tum.in.www1.artemis.domain.exam.StudentExam;
 import de.tum.in.www1.artemis.domain.modeling.ModelingExercise;
 import de.tum.in.www1.artemis.domain.modeling.ModelingSubmission;
-import de.tum.in.www1.artemis.domain.participation.Participation;
 import de.tum.in.www1.artemis.domain.participation.StudentParticipation;
 import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.domain.quiz.QuizSubmission;
@@ -73,13 +70,15 @@ public class ExamService {
 
     private final ProgrammingExerciseService programmingExerciseService;
 
+    private final QuizExerciseService quizExerciseService;
+
     private final ExamQuizService examQuizService;
 
     private final InstanceMessageSendService instanceMessageSendService;
 
     public ExamService(ExamRepository examRepository, StudentExamRepository studentExamRepository, UserService userService, ParticipationService participationService,
             ProgrammingExerciseService programmingExerciseService, ExamQuizService examQuizService, ExerciseService exerciseService,
-            InstanceMessageSendService instanceMessageSendService) {
+            InstanceMessageSendService instanceMessageSendService, QuizExerciseService quizExerciseService) {
         this.examRepository = examRepository;
         this.studentExamRepository = studentExamRepository;
         this.userService = userService;
@@ -88,6 +87,7 @@ public class ExamService {
         this.examQuizService = examQuizService;
         this.instanceMessageSendService = instanceMessageSendService;
         this.exerciseService = exerciseService;
+        this.quizExerciseService = quizExerciseService;
     }
 
     @Autowired
@@ -133,6 +133,7 @@ public class ExamService {
 
     /**
      * Get one exam by id with exercise groups and exercises.
+     * Also fetches the template and solution participation for programming exercises and questions for quiz exercises.
      *
      * @param examId the id of the entity
      * @return the exam with exercise groups
@@ -140,7 +141,22 @@ public class ExamService {
     @NotNull
     public Exam findOneWithExerciseGroupsAndExercises(Long examId) {
         log.debug("Request to get exam with exercise groups : {}", examId);
-        return examRepository.findWithExerciseGroupsAndExercisesById(examId).orElseThrow(() -> new EntityNotFoundException("Exam with id: \"" + examId + "\" does not exist"));
+        Exam exam = examRepository.findWithExerciseGroupsAndExercisesById(examId).orElseThrow(() -> new EntityNotFoundException("Exam with id: \"" + examId + "\" does not exist"));
+        for (ExerciseGroup exerciseGroup : exam.getExerciseGroups()) {
+            for (Exercise exercise : exerciseGroup.getExercises()) {
+                if (exercise instanceof ProgrammingExercise) {
+                    ProgrammingExercise exerciseWithTemplateAndSolutionParticipation = programmingExerciseService
+                            .findWithTemplateAndSolutionParticipationWithResultsById(exercise.getId());
+                    ((ProgrammingExercise) exercise).setTemplateParticipation(exerciseWithTemplateAndSolutionParticipation.getTemplateParticipation());
+                    ((ProgrammingExercise) exercise).setSolutionParticipation(exerciseWithTemplateAndSolutionParticipation.getSolutionParticipation());
+                }
+                if (exercise instanceof QuizExercise) {
+                    QuizExercise quizExercise = quizExerciseService.findOneWithQuestions(exercise.getId());
+                    ((QuizExercise) exercise).setQuizQuestions(quizExercise.getQuizQuestions());
+                }
+            }
+        }
+        return exam;
     }
 
     /**
@@ -369,8 +385,8 @@ public class ExamService {
      * @return the list of student exams with their corresponding users
      */
     public List<StudentExam> generateStudentExams(Long examId) {
-        // Delete all existing student exams via orphan removal
-        Exam examWithExistingStudentExams = examRepository.findWithStudentExamsById(examId).get();
+        // Delete all existing student exams via orphan removal (ignore test runs)
+        Exam examWithExistingStudentExams = findWithStudentExamsById(examId);
 
         // TODO: the validation checks should happen in the resource, before this method is even being called!
         if (examWithExistingStudentExams.getNumberOfExercisesInExam() == null) {
@@ -503,6 +519,7 @@ public class ExamService {
             studentExam.setExam(exam);
             studentExam.setUser(user);
             studentExam.setSubmitted(false);
+            studentExam.setTestRun(false);
 
             // Add a random exercise for each exercise group if the index of the exercise group is in assembledIndices
             List<Integer> assembledIndices = assembleIndicesListWithRandomSelection(indicesOfMandatoryExerciseGroups, indicesOfOptionalExerciseGroups, numberOfOptionalExercises);
@@ -535,7 +552,7 @@ public class ExamService {
      * @param studentDtos   the list of students (with at least registration number) who should get access to the exam
      * @return the list of students who could not be registered for the exam, because they could NOT be found in the Artemis database and could NOT be found in the TUM LDAP
      */
-    public List<StudentDTO> registerStudentsForExam(@PathVariable Long courseId, @PathVariable Long examId, @RequestBody List<StudentDTO> studentDtos) {
+    public List<StudentDTO> registerStudentsForExam(Long courseId, Long examId, List<StudentDTO> studentDtos) {
         var course = courseService.findOne(courseId);
         var exam = findOneWithRegisteredUsers(examId);
         List<StudentDTO> notFoundStudentsDtos = new ArrayList<>();
@@ -589,6 +606,18 @@ public class ExamService {
     }
 
     /**
+     * Finds an exam based on the id with all student exams which are not marked as test runs.
+     * @param examId the id of the exam
+     * @return the exam with student exams loaded
+     */
+    private Exam findWithStudentExamsById(long examId) {
+        Exam exam = examRepository.findWithStudentExamsById(examId).orElseThrow(() -> new EntityNotFoundException("Exam with id " + examId + " does not exist"));
+        // drop all test runs and set the remaining student exams to the exam
+        exam.setStudentExams(exam.getStudentExams().stream().dropWhile(StudentExam::getTestRun).collect(Collectors.toSet()));
+        return exam;
+    }
+
+    /**
      * Converts List<[examId, registeredUsersCount]> into Map<examId -> registeredUsersCount>
      *
      * @param examIdAndRegisteredUsersCountPairs list of pairs (examId, registeredUsersCount)
@@ -634,35 +663,41 @@ public class ExamService {
 
         var studentExams = exam.getStudentExams();
 
-        List<Participation> generatedParticipations = Collections.synchronizedList(new ArrayList<>());
+        List<StudentParticipation> generatedParticipations = Collections.synchronizedList(new ArrayList<>());
 
-        executeInParallel(() -> studentExams.parallelStream().forEach(studentExam -> {
-            User student = studentExam.getUser();
-            for (Exercise exercise : studentExam.getExercises()) {
-                // we start the exercise if no participation was found that was already fully initialized
-                if (exercise.getStudentParticipations().stream()
-                        .noneMatch(studentParticipation -> studentParticipation.getParticipant().equals(student) && studentParticipation.getInitializationState() != null
-                                && studentParticipation.getInitializationState().hasCompletedState(InitializationState.INITIALIZED))) {
-                    try {
-                        SecurityUtils.setAuthorizationObject();
-                        if (exercise instanceof ProgrammingExercise) {
-                            // Load lazy property
-                            final var programmingExercise = programmingExerciseService.findWithTemplateParticipationAndSolutionParticipationById(exercise.getId());
-                            ((ProgrammingExercise) exercise).setTemplateParticipation(programmingExercise.getTemplateParticipation());
-                        }
-                        // this will create initial (empty) submissions for quiz, text, modeling and file upload
-                        var participation = participationService.startExercise(exercise, student, true);
-                        generatedParticipations.add(participation);
-                    }
-                    catch (Exception ex) {
-                        log.warn("Start exercise for student exam {} and exercise {} and student {} failed with exception: {}", studentExam.getId(), exercise.getId(),
-                                student.getId(), ex.getMessage(), ex);
-                    }
-                }
-            }
-        }));
+        executeInParallel(() -> studentExams.parallelStream().forEach(studentExam -> setUpExerciseParticipationsAndSubmissions(generatedParticipations, studentExam)));
 
         return generatedParticipations.size();
+    }
+
+    /**
+     * Sets up the participations and submissions for all the exercises of the student exam.
+     * @param generatedParticipations List of generatedParticipations
+     * @param studentExam The studentExam
+     */
+    public void setUpExerciseParticipationsAndSubmissions(List<StudentParticipation> generatedParticipations, StudentExam studentExam) {
+        User student = studentExam.getUser();
+        for (Exercise exercise : studentExam.getExercises()) {
+            // we start the exercise if no participation was found that was already fully initialized
+            if (exercise.getStudentParticipations().stream().noneMatch(studentParticipation -> studentParticipation.getParticipant().equals(student)
+                    && studentParticipation.getInitializationState() != null && studentParticipation.getInitializationState().hasCompletedState(InitializationState.INITIALIZED))) {
+                try {
+                    SecurityUtils.setAuthorizationObject();
+                    if (exercise instanceof ProgrammingExercise) {
+                        // Load lazy property
+                        final var programmingExercise = programmingExerciseService.findWithTemplateParticipationAndSolutionParticipationById(exercise.getId());
+                        ((ProgrammingExercise) exercise).setTemplateParticipation(programmingExercise.getTemplateParticipation());
+                    }
+                    // this will create initial (empty) submissions for quiz, text, modeling and file upload
+                    var participation = participationService.startExercise(exercise, student, true);
+                    generatedParticipations.add(participation);
+                }
+                catch (Exception ex) {
+                    log.warn("Start exercise for student exam {} and exercise {} and student {} failed with exception: {}", studentExam.getId(), exercise.getId(), student.getId(),
+                            ex.getMessage(), ex);
+                }
+            }
+        }
     }
 
     private void executeInParallel(Runnable task) {
@@ -706,9 +741,7 @@ public class ExamService {
         long start = System.nanoTime();
         log.info("Evaluating {} quiz exercies in exam {}", quizExercises.size(), examId);
         // Evaluate all quizzes for that exercise
-        quizExercises.forEach(quiz -> {
-            examQuizService.evaluateQuizAndUpdateStatistics(quiz.getId());
-        });
+        quizExercises.forEach(quiz -> examQuizService.evaluateQuizAndUpdateStatistics(quiz.getId()));
         log.info("Evaluated {} quiz exercies in exam {} in {}", quizExercises.size(), examId, TimeLogUtil.formatDurationFrom(start));
 
         return quizExercises.size();
@@ -846,4 +879,5 @@ public class ExamService {
     public boolean isUserRegisteredForExam(Long examId, Long userId) {
         return examRepository.isUserRegisteredForExam(examId, userId);
     }
+
 }

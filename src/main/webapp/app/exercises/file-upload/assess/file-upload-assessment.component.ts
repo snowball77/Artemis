@@ -25,6 +25,7 @@ import { ComplaintService } from 'app/complaints/complaint.service';
 import { StudentParticipation } from 'app/entities/participation/student-participation.model';
 import { Result } from 'app/entities/result.model';
 import { StructuredGradingCriterionService } from 'app/exercises/shared/structured-grading-criterion/structured-grading-criterion.service';
+import { assessmentNavigateBack } from 'app/exercises/shared/navigate-back.util';
 
 @Component({
     providers: [FileUploadAssessmentsService],
@@ -53,6 +54,7 @@ export class FileUploadAssessmentComponent implements OnInit, AfterViewInit, OnD
     notFound = false;
     userId: number;
     isLoading = true;
+    isTestRun = false;
     courseId: number;
 
     /** Resizable constants **/
@@ -97,6 +99,9 @@ export class FileUploadAssessmentComponent implements OnInit, AfterViewInit, OnD
             this.userId = user!.id!;
         });
         this.isAtLeastInstructor = this.accountService.hasAnyAuthorityDirect(['ROLE_ADMIN', 'ROLE_INSTRUCTOR']);
+        this.route.queryParamMap.subscribe((queryParams) => {
+            this.isTestRun = queryParams.get('testRun') === 'true';
+        });
 
         this.route.params.subscribe((params) => {
             this.courseId = Number(params['courseId']);
@@ -372,14 +377,7 @@ export class FileUploadAssessmentComponent implements OnInit, AfterViewInit, OnD
     }
 
     navigateBack() {
-        if (this.exercise && this.exercise.teamMode && this.exercise.course && this.submission) {
-            const teamId = (this.submission.participation as StudentParticipation).team.id;
-            this.router.navigateByUrl(`/courses/${this.exercise.course.id}/exercises/${this.exercise.id}/teams/${teamId}`);
-        } else if (this.exercise && !this.exercise.teamMode && this.exercise.course) {
-            this.router.navigateByUrl(`/course-management/${this.exercise.course.id}/exercises/${this.exercise.id}/tutor-dashboard`);
-        } else {
-            this.location.back();
-        }
+        assessmentNavigateBack(this.location, this.router, this.exercise, this.submission, this.isTestRun);
     }
 
     updateAssessment() {

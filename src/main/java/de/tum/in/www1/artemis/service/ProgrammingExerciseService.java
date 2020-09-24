@@ -749,7 +749,7 @@ public class ProgrammingExerciseService {
         final var sorted = PageRequest.of(search.getPage() - 1, search.getPageSize(), sorting);
         final var searchTerm = search.getSearchTerm();
 
-        final var exercisePage = authCheckService.isAdmin()
+        final var exercisePage = authCheckService.isAdmin(user)
                 ? programmingExerciseRepository.findByTitleIgnoreCaseContainingAndShortNameNotNullOrCourse_TitleIgnoreCaseContainingAndShortNameNotNull(searchTerm, searchTerm,
                         sorted)
                 : programmingExerciseRepository.findByTitleInExerciseOrCourseAndUserHasAccessToCourse(searchTerm, searchTerm, user.getGroups(), sorted);
@@ -798,24 +798,38 @@ public class ProgrammingExerciseService {
 
     /**
      * @param exerciseId the exercise we are interested in
+     * @param ignoreTestRuns should be set for exam exercises
      * @return the number of programming submissions which should be assessed
      * We don't need to check for the submission date, because students cannot participate in programming exercises with manual assessment after their due date
      */
-    public long countSubmissionsByExerciseIdSubmitted(Long exerciseId) {
+    public long countSubmissionsByExerciseIdSubmitted(Long exerciseId, boolean ignoreTestRuns) {
         long start = System.currentTimeMillis();
-        var count = programmingExerciseRepository.countSubmissionsByExerciseIdSubmitted(exerciseId);
+        long count;
+        if (ignoreTestRuns) {
+            count = programmingExerciseRepository.countSubmissionsByExerciseIdSubmittedIgnoreTestRunSubmissions(exerciseId);
+        }
+        else {
+            count = programmingExerciseRepository.countSubmissionsByExerciseIdSubmitted(exerciseId);
+        }
         log.debug("countSubmissionsByExerciseIdSubmitted took " + (System.currentTimeMillis() - start) + "ms");
         return count;
     }
 
     /**
      * @param exerciseId the exercise we are interested in
+     * @param ignoreTestRuns should be set for exam exercises
      * @return the number of assessed programming submissions
      * We don't need to check for the submission date, because students cannot participate in programming exercises with manual assessment after their due date
      */
-    public long countAssessmentsByExerciseIdSubmitted(Long exerciseId) {
+    public long countAssessmentsByExerciseIdSubmitted(Long exerciseId, boolean ignoreTestRuns) {
         long start = System.currentTimeMillis();
-        var count = programmingExerciseRepository.countAssessmentsByExerciseIdSubmitted(exerciseId);
+        long count;
+        if (ignoreTestRuns) {
+            count = programmingExerciseRepository.countAssessmentsByExerciseIdSubmittedIgnoreTestRunSubmissions(exerciseId);
+        }
+        else {
+            count = programmingExerciseRepository.countAssessmentsByExerciseIdSubmitted(exerciseId);
+        }
         log.debug("countAssessmentsByExerciseIdSubmitted took " + (System.currentTimeMillis() - start) + "ms");
         return count;
     }
