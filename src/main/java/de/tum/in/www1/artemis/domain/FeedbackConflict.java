@@ -21,7 +21,7 @@ import de.tum.in.www1.artemis.domain.enumeration.TextAssessmentConflictType;
  */
 @Entity
 @Table(name = "text_assessment_conflict")
-public class TextAssessmentConflict implements Serializable {
+public class FeedbackConflict implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

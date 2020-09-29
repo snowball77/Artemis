@@ -15,7 +15,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import de.tum.in.www1.artemis.domain.Feedback;
-import de.tum.in.www1.artemis.domain.TextAssessmentConflict;
+import de.tum.in.www1.artemis.domain.FeedbackConflict;
 import de.tum.in.www1.artemis.domain.TextBlock;
 import de.tum.in.www1.artemis.exception.NetworkingError;
 import de.tum.in.www1.artemis.repository.FeedbackRepository;
@@ -88,7 +88,7 @@ public class AutomaticTextAssessmentConflictService {
         }
 
         // create an array to store conflicts
-        List<TextAssessmentConflict> textAssessmentConflicts = new ArrayList<>();
+        List<FeedbackConflict> feedbackConflicts = new ArrayList<>();
 
         // look for new conflicts
         // Athene may find conflicts with feedback ids that are not in the feedback repository any more. So check for them. (May happen if the feedback is deleted in Artemis but
@@ -96,30 +96,30 @@ public class AutomaticTextAssessmentConflictService {
         textAssessmentConflictResponseDTOS.forEach(conflict -> {
             Optional<Feedback> firstFeedback = feedbackRepository.findById(conflict.getFirstFeedbackId());
             Optional<Feedback> secondFeedback = feedbackRepository.findById(conflict.getSecondFeedbackId());
-            List<TextAssessmentConflict> storedConflicts = this.textAssessmentConflictRepository.findByFirstAndSecondFeedback(conflict.getFirstFeedbackId(),
+            List<FeedbackConflict> storedConflicts = this.textAssessmentConflictRepository.findByFirstAndSecondFeedback(conflict.getFirstFeedbackId(),
                     conflict.getSecondFeedbackId());
             // if the found conflict is present but its type has changed, update it
             if (!storedConflicts.isEmpty() && !storedConflicts.get(0).getType().equals(conflict.getType())) {
                 storedConflicts.get(0).setType(conflict.getType());
-                textAssessmentConflicts.add(storedConflicts.get(0));
+                feedbackConflicts.add(storedConflicts.get(0));
             }
 
             // new conflict
             if (firstFeedback.isPresent() && secondFeedback.isPresent() && storedConflicts.isEmpty()) {
-                TextAssessmentConflict textAssessmentConflict = new TextAssessmentConflict();
-                textAssessmentConflict.setConflict(true);
-                textAssessmentConflict.setFirstFeedback(firstFeedback.get());
-                textAssessmentConflict.setSecondFeedback(secondFeedback.get());
-                textAssessmentConflict.setType(conflict.getType());
-                textAssessmentConflict.setCreatedAt(ZonedDateTime.now());
-                textAssessmentConflicts.add(textAssessmentConflict);
+                FeedbackConflict feedbackConflict = new FeedbackConflict();
+                feedbackConflict.setConflict(true);
+                feedbackConflict.setFirstFeedback(firstFeedback.get());
+                feedbackConflict.setSecondFeedback(secondFeedback.get());
+                feedbackConflict.setType(conflict.getType());
+                feedbackConflict.setCreatedAt(ZonedDateTime.now());
+                feedbackConflicts.add(feedbackConflict);
             }
         });
 
         // find solved conflicts and add them to list
-        textAssessmentConflicts.addAll(this.findSolvedConflicts(textAssessmentConflictRequestDTOS, textAssessmentConflictResponseDTOS));
+        feedbackConflicts.addAll(this.findSolvedConflicts(textAssessmentConflictRequestDTOS, textAssessmentConflictResponseDTOS));
 
-        textAssessmentConflictRepository.saveAll(textAssessmentConflicts);
+        textAssessmentConflictRepository.saveAll(feedbackConflicts);
     }
 
     /**
@@ -130,10 +130,10 @@ public class AutomaticTextAssessmentConflictService {
      * @param textAssessmentConflictResponseDTOS returned list with found conflicts.
      * @return solved conflicts
      */
-    private List<TextAssessmentConflict> findSolvedConflicts(List<TextAssessmentConflictRequestDTO> textAssessmentConflictRequestDTOS,
+    private List<FeedbackConflict> findSolvedConflicts(List<TextAssessmentConflictRequestDTO> textAssessmentConflictRequestDTOS,
             List<TextAssessmentConflictResponseDTO> textAssessmentConflictResponseDTOS) {
         List<Long> feedbackIds = textAssessmentConflictRequestDTOS.stream().map(TextAssessmentConflictRequestDTO::getFeedbackId).collect(toList());
-        List<TextAssessmentConflict> storedConflicts = this.textAssessmentConflictRepository.findAllByFeedbackList(feedbackIds);
+        List<FeedbackConflict> storedConflicts = this.textAssessmentConflictRepository.findAllByFeedbackList(feedbackIds);
 
         storedConflicts.forEach(conflict -> {
             boolean isPresent = textAssessmentConflictResponseDTOS.stream().anyMatch(newConflicts -> (newConflicts.getFirstFeedbackId() == conflict.getFirstFeedback().getId()
@@ -145,7 +145,7 @@ public class AutomaticTextAssessmentConflictService {
             }
         });
         // remove the ones that are already in the database.
-        storedConflicts.removeIf(TextAssessmentConflict::getConflict);
+        storedConflicts.removeIf(FeedbackConflict::getConflict);
 
         return storedConflicts;
     }

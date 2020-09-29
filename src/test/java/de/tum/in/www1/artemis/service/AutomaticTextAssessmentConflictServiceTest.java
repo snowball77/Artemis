@@ -135,9 +135,9 @@ public class AutomaticTextAssessmentConflictServiceTest extends AbstractSpringIn
         final Feedback feedback2 = new Feedback().detailText("Bad answer").credits(2D);
         database.addTextSubmissionWithResultAndAssessorAndFeedbacks(textExercise, textSubmission, "student1", "tutor1", List.of(feedback1, feedback2));
 
-        TextAssessmentConflict textAssessmentConflict = ModelFactory.generateTextAssessmentConflictWithFeedback(feedback1, feedback2);
-        textAssessmentConflict.setType(TextAssessmentConflictType.INCONSISTENT_COMMENT);
-        textAssessmentConflictRepository.save(textAssessmentConflict);
+        FeedbackConflict feedbackConflict = ModelFactory.generateFeedbackConflictBetweenFeedbacks(feedback1, feedback2);
+        feedbackConflict.setType(TextAssessmentConflictType.INCONSISTENT_COMMENT);
+        textAssessmentConflictRepository.save(feedbackConflict);
 
         textAssessmentConflictService = mock(TextAssessmentConflictService.class);
         when(textAssessmentConflictService.checkFeedbackConsistencies(any(), anyLong(), anyInt())).thenReturn(createRemoteServiceResponse(feedback1, feedback2));
@@ -176,8 +176,8 @@ public class AutomaticTextAssessmentConflictServiceTest extends AbstractSpringIn
         final Feedback feedback2 = new Feedback().detailText("Bad answer").credits(2D);
         database.addTextSubmissionWithResultAndAssessorAndFeedbacks(textExercise, textSubmission, "student1", "tutor1", List.of(feedback1, feedback2));
 
-        TextAssessmentConflict textAssessmentConflict = ModelFactory.generateTextAssessmentConflictWithFeedback(feedback1, feedback2);
-        textAssessmentConflictRepository.save(textAssessmentConflict);
+        FeedbackConflict feedbackConflict = ModelFactory.generateFeedbackConflictBetweenFeedbacks(feedback1, feedback2);
+        textAssessmentConflictRepository.save(feedbackConflict);
 
         textAssessmentConflictService = mock(TextAssessmentConflictService.class);
         when(textAssessmentConflictService.checkFeedbackConsistencies(any(), anyLong(), anyInt())).thenReturn(List.of());
@@ -235,8 +235,8 @@ public class AutomaticTextAssessmentConflictServiceTest extends AbstractSpringIn
         final Feedback feedback2 = new Feedback().detailText("Bad answer").credits(2D);
         database.addTextSubmissionWithResultAndAssessorAndFeedbacks(textExercise, textSubmission, "student1", "tutor1", List.of(feedback1, feedback2));
 
-        TextAssessmentConflict textAssessmentConflict = ModelFactory.generateTextAssessmentConflictWithFeedback(feedback1, feedback2);
-        textAssessmentConflictRepository.save(textAssessmentConflict);
+        FeedbackConflict feedbackConflict = ModelFactory.generateFeedbackConflictBetweenFeedbacks(feedback1, feedback2);
+        textAssessmentConflictRepository.save(feedbackConflict);
 
         return textSubmission;
     }
