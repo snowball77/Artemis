@@ -3,6 +3,7 @@ package de.tum.in.www1.artemis.programmingexercise;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
+import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,8 +70,8 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
 
         programmingExerciseStudentParticipation = database.addStudentParticipationForProgrammingExercise(programmingExercise, "student2");
 
-        result = ModelFactory.generateResult(true, 200).resultString("Good effort!").participation(programmingExerciseStudentParticipation);
-        List<Feedback> feedbacks = ModelFactory.generateFeedback().stream().peek(feedback -> feedback.setText("Good work here")).collect(Collectors.toList());
+        result = ModelFactory.generateResult(true, 200).participation(programmingExerciseStudentParticipation);
+        List<Feedback> feedbacks = ModelFactory.generateFeedback().stream().peek(feedback -> feedback.setDetailText("Good work here")).collect(Collectors.toList());
         result.setFeedbacks(feedbacks);
         result.setAssessmentType(AssessmentType.SEMI_AUTOMATIC);
 
@@ -89,24 +90,23 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
         ProgrammingSubmission programmingSubmission = ModelFactory.generateProgrammingSubmission(true);
         programmingSubmission = database.addProgrammingSubmissionWithResultAndAssessor(programmingExercise, programmingSubmission, "student1", "tutor1");
         Result programmingAssessment = programmingSubmission.getResult();
+        double score = programmingAssessment.getFeedbacks().stream().mapToDouble(Feedback::getCredits).sum();
         Complaint complaint = new Complaint().result(programmingAssessment).complaintText("This is not fair");
 
         complaintRepo.save(complaint);
         complaint.getResult().setParticipation(null); // Break infinite reference chain
 
         ComplaintResponse complaintResponse = new ComplaintResponse().complaint(complaint.accepted(false)).responseText("rejected");
-        ProgrammingAssessmentUpdate assessmentUpdate = new ProgrammingAssessmentUpdate();
+        AssessmentUpdate assessmentUpdate = new AssessmentUpdate();
         assessmentUpdate.setFeedbacks(new ArrayList<>());
         assessmentUpdate.setComplaintResponse(complaintResponse);
-        assessmentUpdate.setScore(20);
-        assessmentUpdate.setResultString("new Result!");
 
         Result updatedResult = request.putWithResponseBody("/api/programming-submissions/" + programmingSubmission.getId() + "/assessment-after-complaint", assessmentUpdate,
                 Result.class, HttpStatus.OK);
 
         assertThat(updatedResult).as("updated result found").isNotNull();
-        assertThat(updatedResult.getScore()).isEqualTo(20L);
-        assertThat(updatedResult.getResultString()).isEqualTo("new Result!");
+        assertThat(updatedResult.getScore()).isEqualTo((long) score);
+        assertThat(updatedResult.getResultString()).isEqualTo(createResultString(programmingExercise, programmingAssessment));
         assertThat(((StudentParticipation) updatedResult.getParticipation()).getStudent()).as("student of participation is hidden").isEmpty();
 
         // Check that result and submission are properly connected
@@ -241,7 +241,7 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
         Result response = request.putWithResponseBody("/api/participations/" + programmingExerciseStudentParticipation.getId() + "/manual-results", result, Result.class,
                 HttpStatus.OK);
 
-        assertThat(response.getResultString()).isEqualTo(result.getResultString());
+        assertThat(response.getResultString()).isNull();
         assertThat(response.getSubmission()).isNotNull();
         assertThat(response.getParticipation()).isEqualTo(result.getParticipation());
         assertThat(response.getFeedbacks().size()).isEqualTo(result.getFeedbacks().size());
@@ -254,7 +254,7 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
         Result response = request.putWithResponseBody("/api/participations/" + programmingExerciseStudentParticipation.getId() + "/manual-results?submit=true", result,
                 Result.class, HttpStatus.OK);
 
-        assertThat(response.getResultString()).isEqualTo(result.getResultString());
+        assertThat(response.getResultString()).isEqualTo(createResultString(programmingExercise, result));
         assertThat(response.getSubmission()).isNotNull();
         assertThat(response.getParticipation()).isEqualTo(result.getParticipation());
         assertThat(response.getFeedbacks().size()).isEqualTo(result.getFeedbacks().size());
@@ -309,6 +309,10 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
         List<Feedback> feedbacks = ModelFactory.generateFeedback();
         result.setFeedbacks(feedbacks);
         request.putWithResponseBody("/api/participations/" + programmingExerciseStudentParticipation.getId() + "/manual-results", result, Result.class, HttpStatus.BAD_REQUEST);
+
+        // A feedback has no points
+        result.getFeedbacks().get(0).setCredits(null);
+        request.putWithResponseBody("/api/participations/" + programmingExerciseStudentParticipation.getId() + "/manual-results", result, Result.class, HttpStatus.BAD_REQUEST);
     }
 
     @Test
@@ -326,11 +330,10 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
 
         // Remove feedbacks, change text and score.
         result.setFeedbacks(result.getFeedbacks().subList(0, 1));
-        result.setResultString("Changed text");
         result.setScore(77L);
 
         Result response = request.putWithResponseBody("/api/participations/" + participation.getId() + "/manual-results", result, Result.class, HttpStatus.OK);
-        assertThat(response.getResultString()).isEqualTo(result.getResultString());
+        assertThat(response.getResultString()).isNull();
         assertThat(response.getParticipation()).isEqualTo(result.getParticipation());
         assertThat(response.getFeedbacks().size()).isEqualTo(result.getFeedbacks().size());
 
@@ -352,11 +355,10 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
 
         // Remove feedbacks, change text and score.
         result.setFeedbacks(result.getFeedbacks().subList(0, 1));
-        result.setResultString("Changed text");
         result.setScore(77L);
 
         Result response = request.putWithResponseBody("/api/participations/" + participation.getId() + "/manual-results", result, Result.class, HttpStatus.OK);
-        assertThat(response.getResultString()).isEqualTo(result.getResultString());
+        assertThat(response.getResultString()).isNull();
         assertThat(response.getParticipation()).isEqualTo(result.getParticipation());
         assertThat(response.getFeedbacks().size()).isEqualTo(result.getFeedbacks().size());
     }
@@ -369,12 +371,11 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
         var participation = programmingSubmission.getParticipation();
         var result = programmingSubmission.getResult();
         result.setScore(75L);
-        List<Feedback> feedbacks = ModelFactory.generateFeedback().stream().peek(feedback -> feedback.setText("Good work here")).collect(Collectors.toList());
+        List<Feedback> feedbacks = ModelFactory.generateFeedback().stream().peek(feedback -> feedback.setDetailText("Good work here")).collect(Collectors.toList());
         result.setCompletionDate(ZonedDateTime.now());
         result.setFeedbacks(feedbacks);
         result.setParticipation(participation);
         result.setSubmission(programmingSubmission);
-        result.setResultString("This is a overridden result");
         request.putWithResponseBody("/api/participations/" + participation.getId() + "/manual-results", result, Result.class, httpStatus);
     }
 
@@ -384,5 +385,12 @@ public class ProgrammingAssessmentIntegrationTest extends AbstractSpringIntegrat
         programmingExercise.setAssessmentType(assessmentType);
         programmingExercise = programmingExerciseRepository.save(programmingExercise);
         return database.addStudentParticipationForProgrammingExercise(programmingExercise, "student1");
+    }
+
+    private String createResultString(ProgrammingExercise programmingExercise, Result result) {
+        DecimalFormat formatter = new DecimalFormat("#.##");
+        double maxScore = programmingExercise.getMaxScore();
+        double score = result.getFeedbacks().stream().mapToDouble(Feedback::getCredits).sum();
+        return formatter.format(score) + " of " + formatter.format(maxScore) + " points";
     }
 }
