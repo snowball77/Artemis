@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.ZonedDateTime;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -243,6 +244,17 @@ public class BambooRequestMockProvider {
         final var response = createBuildResult(planKey);
         final var uri = UriComponentsBuilder.fromUri(BAMBOO_SERVER_URL.toURI()).path("/rest/api/latest/result").pathSegment(planKey.toUpperCase() + "-JOB1")
                 .pathSegment("latest.json").queryParam("expand", "testResults.failedTests.testResult.errors,artifacts,changes,vcsRevisions").build().toUri();
+
+        mockServer.expect(requestTo(uri)).andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON).body(mapper.writeValueAsString(response)));
+    }
+
+    public void mockFetchBuildLogs(String planKey) throws URISyntaxException, JsonProcessingException, MalformedURLException {
+        var newDate = (new Date()).getTime();
+        Map firstLogEntry = Map.of( "log", "java.lang.AssertionError: BubbleSort does not sort correctly", "date", newDate);
+        Map response = Map.of("logEntries", Map.of("logEntry", List.of(firstLogEntry)));
+        final var uri = UriComponentsBuilder.fromUri(BAMBOO_SERVER_URL.toURI()).path("/rest/api/latest/result").pathSegment(planKey.toUpperCase() + "-JOB1")
+                .pathSegment("latest.json").queryParam("expand", "logEntries&max-results=2000").build().toUri();
 
         mockServer.expect(requestTo(uri)).andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON).body(mapper.writeValueAsString(response)));

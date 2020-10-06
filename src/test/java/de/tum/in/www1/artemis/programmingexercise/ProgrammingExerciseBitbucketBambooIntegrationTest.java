@@ -90,6 +90,8 @@ public class ProgrammingExerciseBitbucketBambooIntegrationTest extends AbstractS
 
     private final static String teamShortName = "team1";
 
+    private final static String repoBaseUrl = "/api/repository/";
+
     LocalRepository exerciseRepo = new LocalRepository();
 
     LocalRepository testRepo = new LocalRepository();
@@ -326,6 +328,35 @@ public class ProgrammingExerciseBitbucketBambooIntegrationTest extends AbstractS
         }
 
         assertThat(participation.getInitializationState()).as("Participation should be initialized").isEqualTo(InitializationState.INITIALIZED);
+    }
+
+    @Test
+    @WithMockUser(username = studentLogin, roles = "USER")
+    public void startProgrammingExercise_student_submissionFailedWithBuildlog() throws Exception {
+        final var course = exercise.getCourseViaExerciseGroupOrCourseMember();
+        programmingExerciseRepository.save(exercise);
+        database.addTemplateParticipationForProgrammingExercise(exercise);
+        database.addSolutionParticipationForProgrammingExercise(exercise);
+
+        User user = userRepo.findOneByLogin(studentLogin).orElseThrow();
+        final var verifications = mockConnectorRequestsForStartParticipation(exercise, user.getParticipantIdentifier(), Set.of(user));
+        final var path = ParticipationResource.Endpoints.ROOT
+            + ParticipationResource.Endpoints.START_PARTICIPATION.replace("{courseId}", "" + course.getId()).replace("{exerciseId}", "" + exercise.getId());
+        final var participation = request.postWithResponseBody(path, null, ProgrammingExerciseStudentParticipation.class, HttpStatus.CREATED);
+
+
+        // create a submission which fails
+        database.createProgrammingSubmission(participation, true);
+        // get the failed build log
+        bambooRequestMockProvider.mockFetchBuildLogs(participation.getBuildPlanId());
+        var buildLogs = request.get(repoBaseUrl + participation.getId() + "/buildlogs", HttpStatus.OK, List.class);
+
+        for (final var verification : verifications) {
+            verification.performVerification();
+        }
+
+        assertThat(participation.getInitializationState()).as("Participation should be initialized").isEqualTo(InitializationState.INITIALIZED);
+        assertThat(buildLogs.size()).as("Failed build log was created").isEqualTo(1);
     }
 
     @Test
