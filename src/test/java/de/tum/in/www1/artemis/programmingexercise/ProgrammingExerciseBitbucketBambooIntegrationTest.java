@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import de.tum.in.www1.artemis.AbstractSpringIntegrationBambooBitbucketJiraTest;
@@ -91,6 +92,8 @@ public class ProgrammingExerciseBitbucketBambooIntegrationTest extends AbstractS
     private final static String teamShortName = "team1";
 
     private final static String repoBaseUrl = "/api/repository/";
+
+    private final static String participationBaseUrl = "/api/participations/";
 
     LocalRepository exerciseRepo = new LocalRepository();
 
@@ -357,6 +360,38 @@ public class ProgrammingExerciseBitbucketBambooIntegrationTest extends AbstractS
 
         assertThat(participation.getInitializationState()).as("Participation should be initialized").isEqualTo(InitializationState.INITIALIZED);
         assertThat(buildLogs.size()).as("Failed build log was created").isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser(username = studentLogin, roles = "USER")
+    public void startProgrammingExercise_student_retrieveLatestArtifact() throws Exception {
+        final var course = exercise.getCourseViaExerciseGroupOrCourseMember();
+        programmingExerciseRepository.save(exercise);
+        database.addTemplateParticipationForProgrammingExercise(exercise);
+        database.addSolutionParticipationForProgrammingExercise(exercise);
+
+        User user = userRepo.findOneByLogin(studentLogin).orElseThrow();
+        final var verifications = mockConnectorRequestsForStartParticipation(exercise, user.getParticipantIdentifier(), Set.of(user));
+        final var path = ParticipationResource.Endpoints.ROOT
+            + ParticipationResource.Endpoints.START_PARTICIPATION.replace("{courseId}", "" + course.getId()).replace("{exerciseId}", "" + exercise.getId());
+        final var participation = request.postWithResponseBody(path, null, ProgrammingExerciseStudentParticipation.class, HttpStatus.CREATED);
+
+
+        // create a submission
+        database.createProgrammingSubmission(participation, false);
+        // prepare the artifact
+        // ... mock get artifacts with when().then()
+        // prepare the build result
+        bambooRequestMockProvider.mockQueryLatestBuildResultFromBambooServer(participation.getBuildPlanId());
+
+        var artifact = request.get(participationBaseUrl + participation.getId() + "/buildArtifact", HttpStatus.OK, byte[].class);
+
+        for (final var verification : verifications) {
+            verification.performVerification();
+        }
+
+        assertThat(participation.getInitializationState()).as("Participation should be initialized").isEqualTo(InitializationState.INITIALIZED);
+//        assertThat(buildLogs.size()).as("Failed build log was created").isEqualTo(1);
     }
 
     @Test
