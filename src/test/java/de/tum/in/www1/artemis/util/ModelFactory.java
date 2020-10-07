@@ -316,6 +316,15 @@ public class ModelFactory {
         return submission;
     }
 
+    public static QuizSubmission generateQuizSubmission(boolean submitted) {
+        QuizSubmission submission = new QuizSubmission();
+        submission.setSubmitted(submitted);
+        if (submitted) {
+            submission.setSubmissionDate(ZonedDateTime.now().minusDays(1));
+        }
+        return submission;
+    }
+
     public static ExampleSubmission generateExampleSubmission(Submission submission, Exercise exercise, boolean usedForTutorial) {
         ExampleSubmission exampleSubmission = new ExampleSubmission();
         exampleSubmission.setSubmission(submission);
@@ -502,6 +511,7 @@ public class ModelFactory {
         toBeImported.setShortName(shortName);
         toBeImported.setId(template.getId());
         toBeImported.setTestCases(null);
+        toBeImported.setStaticCodeAnalysisCategories(null);
         toBeImported.setNumberOfAssessments(template.getNumberOfAssessments());
         toBeImported.setNumberOfComplaints(template.getNumberOfComplaints());
         toBeImported.setNumberOfMoreFeedbackRequests(template.getNumberOfMoreFeedbackRequests());
@@ -520,7 +530,7 @@ public class ModelFactory {
         toBeImported.setCategories(template.getCategories());
         toBeImported.setPackageName(template.getPackageName());
         toBeImported.setAllowOnlineEditor(template.isAllowOnlineEditor());
-        toBeImported.setStaticCodeAnalysisEnabled(false);
+        toBeImported.setStaticCodeAnalysisEnabled(template.isStaticCodeAnalysisEnabled());
         toBeImported.setTutorParticipations(null);
         toBeImported.setStudentQuestions(null);
         toBeImported.setStudentParticipations(null);
@@ -681,6 +691,17 @@ public class ModelFactory {
         issue.setMessage("Message");
         issue.setPriority("Priority");
         return issue;
+    }
+
+    public static StaticCodeAnalysisCategory generateStaticCodeAnalysisCategory(ProgrammingExercise programmingExercise, String name, CategoryState state, Double penalty,
+            Double maxPenalty) {
+        var category = new StaticCodeAnalysisCategory();
+        category.setName(name);
+        category.setPenalty(penalty);
+        category.setMaxPenalty(maxPenalty);
+        category.setState(state);
+        category.setProgrammingExercise(programmingExercise);
+        return category;
     }
 
     private static BambooBuildResultNotificationDTO.BambooTestJobDTO generateBambooTestJob(String name, boolean successful) {

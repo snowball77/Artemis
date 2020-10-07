@@ -486,8 +486,11 @@ public class ExamIntegrationTest extends AbstractSpringIntegrationBambooBitbucke
         exam.setTitle("Over 9000!");
         long examCountBefore = examRepository.count();
         Exam createdExam = request.putWithResponseBody("/api/courses/" + course1.getId() + "/exams", exam, Exam.class, HttpStatus.CREATED);
-        createdExam.setId(null);
-        assertEquals(exam, createdExam);
+        assertThat(exam.getEndDate()).isEqualTo(createdExam.getEndDate());
+        assertThat(exam.getStartDate()).isEqualTo(createdExam.getStartDate());
+        assertThat(exam.getVisibleDate()).isEqualTo(createdExam.getVisibleDate());
+        // Note: ZonedDateTime has problems with comparison due to time zone differences for values saved in the database and values not saved in the database
+        assertThat(exam).usingRecursiveComparison().ignoringFields("id", "course", "endDate", "startDate", "visibleDate").isEqualTo(createdExam);
         assertThat(examCountBefore + 1).isEqualTo(examRepository.count());
         // No course is set -> conflict
         exam = ModelFactory.generateExam(course1);
@@ -751,18 +754,20 @@ public class ExamIntegrationTest extends AbstractSpringIntegrationBambooBitbucke
     @WithMockUser(username = "instructor1", roles = "INSTRUCTOR")
     public void testDeleteExamWithOneTestRun() throws Exception {
         var instructor = database.getUserByLogin("instructor1");
-        var exam = database.addTextModelingProgrammingExercisesToExam(exam1, false);
-        database.setupTestRunForExamWithExerciseGroupsForInstructor(exam1, instructor, exam.getExerciseGroups());
-        request.delete("/api/courses/" + course1.getId() + "/exams/" + exam1.getId(), HttpStatus.OK);
+        var exam = database.addExam(course1);
+        exam = database.addTextModelingProgrammingExercisesToExam(exam, false);
+        database.setupTestRunForExamWithExerciseGroupsForInstructor(exam, instructor, exam.getExerciseGroups());
+        request.delete("/api/courses/" + exam.getCourse().getId() + "/exams/" + exam.getId(), HttpStatus.OK);
     }
 
     @Test
     @WithMockUser(username = "instructor1", roles = "INSTRUCTOR")
     public void testGetExamForTestRunDashboard_ok() throws Exception {
         var instructor = database.getUserByLogin("instructor1");
-        var exam = database.addTextModelingProgrammingExercisesToExam(exam1, false);
-        database.setupTestRunForExamWithExerciseGroupsForInstructor(exam1, instructor, exam.getExerciseGroups());
-        exam = request.get("/api/courses/" + course1.getId() + "/exams/" + exam1.getId() + "/for-exam-tutor-test-run-dashboard", HttpStatus.OK, Exam.class);
+        var exam = database.addExam(course1);
+        exam = database.addTextModelingProgrammingExercisesToExam(exam, false);
+        database.setupTestRunForExamWithExerciseGroupsForInstructor(exam, instructor, exam.getExerciseGroups());
+        exam = request.get("/api/courses/" + exam.getCourse().getId() + "/exams/" + exam.getId() + "/for-exam-tutor-test-run-dashboard", HttpStatus.OK, Exam.class);
         assertThat(exam.getExerciseGroups().stream().flatMap(exerciseGroup -> exerciseGroup.getExercises().stream()).collect(Collectors.toList())).isNotEmpty();
     }
 

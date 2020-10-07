@@ -39,6 +39,7 @@ import de.tum.in.www1.artemis.domain.quiz.QuizExercise;
 import de.tum.in.www1.artemis.domain.quiz.QuizSubmission;
 import de.tum.in.www1.artemis.repository.*;
 import de.tum.in.www1.artemis.service.FeedbackService;
+import de.tum.in.www1.artemis.service.ProgrammingExerciseGradingService;
 import de.tum.in.www1.artemis.service.ProgrammingExerciseTestCaseService;
 import de.tum.in.www1.artemis.service.ResultService;
 import de.tum.in.www1.artemis.util.DatabaseUtilService;
@@ -88,6 +89,9 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
 
     @Autowired
     SubmissionRepository submissionRepository;
+
+    @Autowired
+    ProgrammingExerciseGradingService gradingService;
 
     private Course course;
 
@@ -152,10 +156,10 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
                 .add(new ProgrammingExerciseTestCase().exercise(programmingExercise).testName("test4").active(true).weight(1.0).id(3L).bonusMultiplier(1D).bonusPoints(0D));
 
         final var resultNotification = ModelFactory.generateBambooBuildResult(Constants.ASSIGNMENT_REPO_NAME, List.of("test1", "test2", "test4"), List.of());
-        final var optionalResult = resultService.processNewProgrammingExerciseResult(solutionParticipation, resultNotification);
+        final var optionalResult = gradingService.processNewProgrammingExerciseResult(solutionParticipation, resultNotification);
 
         Set<ProgrammingExerciseTestCase> testCases = programmingExerciseTestCaseService.findByExerciseId(programmingExercise.getId());
-        assertThat(testCases).isEqualTo(expectedTestCases);
+        assertThat(testCases).usingElementComparatorIgnoringFields("exercise", "id").isEqualTo(expectedTestCases);
         assertThat(optionalResult).isPresent();
         assertThat(optionalResult.get().getScore()).isEqualTo(100L);
     }
@@ -166,7 +170,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
         final var resultNotification = ModelFactory.generateBambooBuildResultWithStaticCodeAnalysisReport(Constants.ASSIGNMENT_REPO_NAME, List.of("test1"), List.of());
         final var staticCodeAnalysisFeedback = feedbackService
                 .createFeedbackFromStaticCodeAnalysisReports(resultNotification.getBuild().getJobs().get(0).getStaticCodeAnalysisReports());
-        final var optionalResult = resultService.processNewProgrammingExerciseResult(programmingExerciseStudentParticipationStaticCodeAnalysis, resultNotification);
+        final var optionalResult = gradingService.processNewProgrammingExerciseResult(programmingExerciseStudentParticipationStaticCodeAnalysis, resultNotification);
         final var savedResult = resultService.findOneWithEagerSubmissionAndFeedback(optionalResult.get().getId());
 
         // Create comparator to explicitly compare feedback attributes (equals only compares id)
@@ -236,7 +240,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void shouldReturnTheResultDetailsForAProgrammingExerciseStudentParticipation() throws Exception {
-        Result result = database.addResultToParticipation(programmingExerciseStudentParticipation);
+        Result result = database.addResultToParticipation(null, null, programmingExerciseStudentParticipation);
         result = database.addSampleFeedbackToResults(result);
 
         List<Feedback> feedbacks = request.getList("/api/results/" + result.getId() + "/details", HttpStatus.OK, Feedback.class);
@@ -247,7 +251,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void shouldReturnTheResultDetailsWithStaticCodeAnalysisFeedbackForAProgrammingExerciseStudentParticipation() throws Exception {
-        Result result = database.addResultToParticipation(programmingExerciseStudentParticipation);
+        Result result = database.addResultToParticipation(null, null, programmingExerciseStudentParticipation);
         result = database.addSampleStaticCodeAnalysisFeedbackToResults(result);
 
         List<Feedback> feedback = request.getList("/api/results/" + result.getId() + "/details", HttpStatus.OK, Feedback.class);
@@ -258,7 +262,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student2", roles = "USER")
     public void shouldReturnTheResultDetailsForAStudentParticipation() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         result = database.addSampleFeedbackToResults(result);
 
         List<Feedback> feedbacks = request.getList("/api/results/" + result.getId() + "/details", HttpStatus.OK, Feedback.class);
@@ -269,7 +273,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void shouldReturnTheResultDetailsForAStudentParticipation_studentForbidden() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         result = database.addSampleFeedbackToResults(result);
 
         request.getList("/api/results/" + result.getId() + "/details", HttpStatus.FORBIDDEN, Feedback.class);
@@ -278,7 +282,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void shouldReturnTheResultDetailsForAProgrammingExerciseStudentParticipation_studentForbidden() throws Exception {
-        Result result = database.addResultToParticipation(solutionParticipation);
+        Result result = database.addResultToParticipation(null, null, solutionParticipation);
         result = database.addSampleFeedbackToResults(result);
         request.getList("/api/results/" + result.getId() + "/details", HttpStatus.FORBIDDEN, Feedback.class);
     }
@@ -286,7 +290,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void shouldReturnNotFoundForNonExistingResult() throws Exception {
-        Result result = database.addResultToParticipation(solutionParticipation);
+        Result result = database.addResultToParticipation(null, null, solutionParticipation);
         result = database.addSampleFeedbackToResults(result);
         request.getList("/api/results/" + 11667 + "/details", HttpStatus.NOT_FOUND, Feedback.class);
     }
@@ -461,7 +465,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "tutor1", roles = "TA")
     public void getResult() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         result = database.addSampleFeedbackToResults(result);
         Result returnedResult = request.get("/api/results/" + result.getId(), HttpStatus.OK, Result.class);
         assertThat(returnedResult).isNotNull();
@@ -471,16 +475,16 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void getResult_asStudent() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         request.get("/api/results/" + result.getId(), HttpStatus.FORBIDDEN, Result.class);
     }
 
     @Test
     @WithMockUser(value = "tutor1", roles = "TA")
     public void getLatestResultWithFeedbacks() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         result.setCompletionDate(ZonedDateTime.now().minusHours(10));
-        Result latestResult = database.addResultToParticipation(studentParticipation);
+        Result latestResult = database.addResultToParticipation(null, null, studentParticipation);
         latestResult.setCompletionDate(ZonedDateTime.now());
         result = database.addSampleFeedbackToResults(result);
         latestResult = database.addSampleFeedbackToResults(latestResult);
@@ -492,7 +496,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "student1", roles = "USER")
     public void getLatestResultWithFeedbacks_asStudent() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         result = database.addSampleFeedbackToResults(result);
         request.get("/api/participations/" + studentParticipation.getId() + "/latest-result", HttpStatus.FORBIDDEN, Result.class);
     }
@@ -500,7 +504,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
     @Test
     @WithMockUser(value = "tutor1", roles = "TA")
     public void deleteResult() throws Exception {
-        Result result = database.addResultToParticipation(studentParticipation);
+        Result result = database.addResultToParticipation(null, null, studentParticipation);
         result = database.addSampleFeedbackToResults(result);
         request.delete("/api/results/" + result.getId(), HttpStatus.OK);
         assertThat(resultRepository.existsById(result.getId())).isFalse();
@@ -576,7 +580,7 @@ public class ResultServiceIntegrationTest extends AbstractSpringIntegrationBambo
         course.addExercises(modelingExercise);
         modelingExerciseRepository.save(modelingExercise);
         var participation = database.addParticipationForExercise(modelingExercise, "student1");
-        var result = database.addResultToParticipation(participation);
+        var result = database.addResultToParticipation(null, null, participation);
         request.postWithResponseBody("/api/exercises/" + modelingExercise.getId() + "/external-submission-results?studentLogin=student1", result, Result.class,
                 HttpStatus.BAD_REQUEST);
     }
